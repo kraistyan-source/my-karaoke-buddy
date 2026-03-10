@@ -45,6 +45,24 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     return isVideo ? videoRef.current : audioRef.current;
   }, [isVideo]);
 
+  const broadcastState = useCallback((overrides: Partial<Parameters<typeof sendToAudience>[0]> = {}) => {
+    const media = getMedia();
+
+    sendToAudience({
+      type: "state",
+      currentEntry: overrides.currentEntry !== undefined ? overrides.currentEntry : currentEntry,
+      nextSingerName: overrides.nextSingerName !== undefined ? overrides.nextSingerName : nextSingerName,
+      currentTime: overrides.currentTime !== undefined ? overrides.currentTime : media?.currentTime,
+      duration:
+        overrides.duration !== undefined
+          ? overrides.duration
+          : media?.duration && Number.isFinite(media.duration)
+            ? media.duration
+            : undefined,
+      isPlaying: overrides.isPlaying !== undefined ? overrides.isPlaying : isPlaying,
+    });
+  }, [currentEntry, nextSingerName, isPlaying, getMedia]);
+
   // Reset on entry change
   useEffect(() => {
     setIsPlaying(false);
@@ -53,23 +71,23 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     setDuration("0:00");
     setPitch(0);
     setSpeed(100);
-    sendToAudience({ type: "state", currentEntry, nextSingerName });
+    broadcastState({ currentEntry, nextSingerName, currentTime: 0, duration: 0, isPlaying: false });
   }, [currentEntry?.id]);
 
   // Broadcast nextSinger changes
   useEffect(() => {
-    sendToAudience({ type: "state", currentEntry, nextSingerName });
+    broadcastState();
   }, [nextSingerName]);
 
   // Listen for audience requests
   useEffect(() => {
     const unsub = onHostMessage((msg) => {
       if (msg.type === "request-state") {
-        sendToAudience({ type: "state", currentEntry, nextSingerName });
+        broadcastState();
       }
     });
     return unsub;
-  }, [currentEntry, nextSingerName]);
+  }, [broadcastState]);
 
   // Apply volume
   useEffect(() => {
@@ -133,7 +151,7 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     media.pause();
     media.currentTime = 0;
     setIsPlaying(false);
-    sendToAudience({ type: "pause" });
+    sendToAudience({ type: "pause", currentTime: 0, isPlaying: false });
   };
 
   const handleRestart = () => {
@@ -144,7 +162,7 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
   };
 
   const handleSkip = () => {
-    sendToAudience({ type: "skip" });
+    sendToAudience({ type: "skip", isPlaying: false });
     onSkip();
   };
 
@@ -170,7 +188,10 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     openAudienceWindow();
     setAudienceOpen(true);
     setTimeout(() => {
-      sendToAudience({ type: "state", currentEntry, nextSingerName });
+      broadcastState();
+    }, 300);
+    setTimeout(() => {
+      broadcastState();
     }, 1500);
   };
 
