@@ -5,25 +5,43 @@ import SearchBar from "@/components/SearchBar";
 import GenreFilter from "@/components/GenreFilter";
 import SongCard from "@/components/SongCard";
 import SingScreen from "@/components/SingScreen";
+import FileUpload from "@/components/FileUpload";
+import InstallBanner from "@/components/InstallBanner";
+import { ParsedKaraokeFile } from "@/lib/karaokeParser";
 
 const Index = () => {
   const [search, setSearch] = useState("");
   const [genre, setGenre] = useState<string | null>(null);
   const [activeSong, setActiveSong] = useState<Song | null>(null);
+  const [importedSongs, setImportedSongs] = useState<Song[]>([]);
+
+  const allSongs = useMemo(() => [...importedSongs, ...songs], [importedSongs]);
 
   const genres = useMemo(() => {
-    return [...new Set(songs.map((s) => s.genre))];
-  }, []);
+    return [...new Set(allSongs.map((s) => s.genre))];
+  }, [allSongs]);
 
   const filtered = useMemo(() => {
-    return songs.filter((s) => {
+    return allSongs.filter((s) => {
       const matchSearch =
         s.title.toLowerCase().includes(search.toLowerCase()) ||
         s.artist.toLowerCase().includes(search.toLowerCase());
       const matchGenre = !genre || s.genre === genre;
       return matchSearch && matchGenre;
     });
-  }, [search, genre]);
+  }, [search, genre, allSongs]);
+
+  const handleFileLoaded = (parsed: ParsedKaraokeFile) => {
+    const newSong: Song = {
+      id: `imported-${Date.now()}`,
+      title: parsed.title,
+      artist: parsed.artist,
+      duration: formatDuration(parsed.durationSeconds),
+      genre: "Importado",
+      lyrics: parsed.lyrics,
+    };
+    setImportedSongs((prev) => [newSong, ...prev]);
+  };
 
   if (activeSong) {
     return <SingScreen song={activeSong} onBack={() => setActiveSong(null)} />;
@@ -52,6 +70,8 @@ const Index = () => {
 
       {/* Content */}
       <main className="max-w-2xl mx-auto px-6 py-6 space-y-6">
+        <InstallBanner />
+        <FileUpload onFileLoaded={handleFileLoaded} />
         <SearchBar value={search} onChange={setSearch} />
         <GenreFilter genres={genres} selected={genre} onSelect={setGenre} />
 
@@ -78,5 +98,11 @@ const Index = () => {
     </div>
   );
 };
+
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 export default Index;
