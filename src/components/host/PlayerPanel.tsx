@@ -207,7 +207,17 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     <div ref={containerRef} className="flex flex-col h-full bg-background">
       {/* Video / Visual Area */}
       <div className="flex-1 relative flex items-center justify-center bg-card overflow-hidden">
-        <div className="vhs-scanlines absolute inset-0 z-10 pointer-events-none" />
+        {/* Theme overlays */}
+        {currentEntry && (
+          <ThemeOverlay
+            theme={theme}
+            singerName={currentEntry.singerName}
+            songTitle={currentEntry.song.title}
+            artist={currentEntry.song.artist}
+            progress={progress}
+            showSingerInfo={!isVideo}
+          />
+        )}
         
         {currentEntry ? (
           <>
@@ -215,7 +225,8 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
               <video
                 ref={videoRef}
                 src={currentEntry.song.fileUrl}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain relative"
+                style={{ zIndex: 3 }}
                 onTimeUpdate={handleTimeUpdate}
                 onEnded={handleSkip}
               />
