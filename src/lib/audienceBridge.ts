@@ -84,6 +84,7 @@ function syncSnapshot(msg: AudienceMessage) {
           : msg.isPlaying !== undefined
             ? msg.isPlaying
             : previous?.isPlaying ?? false,
+    themeId: msg.themeId !== undefined ? msg.themeId : previous?.themeId,
     updatedAt: Date.now(),
   };
 
