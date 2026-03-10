@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Play, Pause, SkipForward, Volume2, VolumeX, Maximize, Mic2 } from "lucide-react";
+import { Play, Pause, SkipForward, Volume2, VolumeX, Maximize, Mic2, Tv } from "lucide-react";
 import { QueueEntry } from "@/stores/useQueue";
+import { sendToAudience, openAudienceWindow } from "@/lib/audienceBridge";
 import { cn } from "@/lib/utils";
 
 interface PlayerPanelProps {
   currentEntry: QueueEntry | null;
+  nextSingerName?: string;
   onSkip: () => void;
 }
 
-const PlayerPanel = ({ currentEntry, onSkip }: PlayerPanelProps) => {
+const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -18,6 +20,7 @@ const PlayerPanel = ({ currentEntry, onSkip }: PlayerPanelProps) => {
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState("0:00");
   const [duration, setDuration] = useState("0:00");
+  const [audienceOpen, setAudienceOpen] = useState(false);
 
   const isVideo = currentEntry?.song.fileType === "mp4";
   const hasMedia = currentEntry?.song.fileUrl != null;
@@ -32,12 +35,14 @@ const PlayerPanel = ({ currentEntry, onSkip }: PlayerPanelProps) => {
     return isVideo ? videoRef.current : audioRef.current;
   }, [isVideo]);
 
+  // Broadcast state to audience on entry change
   useEffect(() => {
     setIsPlaying(false);
     setProgress(0);
     setCurrentTime("0:00");
     setDuration("0:00");
-  }, [currentEntry?.id]);
+    sendToAudience({ type: "state", currentEntry, nextSingerName });
+  }, [currentEntry?.id, nextSingerName]);
 
   useEffect(() => {
     const media = getMedia();
@@ -48,9 +53,14 @@ const PlayerPanel = ({ currentEntry, onSkip }: PlayerPanelProps) => {
   const handleTimeUpdate = () => {
     const media = getMedia();
     if (!media || !media.duration) return;
-    setProgress((media.currentTime / media.duration) * 100);
+    const pct = (media.currentTime / media.duration) * 100;
+    setProgress(pct);
     setCurrentTime(formatTime(media.currentTime));
     setDuration(formatTime(media.duration));
+    // Sync time to audience every ~2 seconds
+    if (Math.floor(media.currentTime * 10) % 20 === 0) {
+      sendToAudience({ type: "time", currentTime: media.currentTime, duration: media.duration });
+    }
   };
 
   const togglePlay = async () => {
@@ -58,10 +68,17 @@ const PlayerPanel = ({ currentEntry, onSkip }: PlayerPanelProps) => {
     if (!media) return;
     if (isPlaying) {
       media.pause();
+      sendToAudience({ type: "pause" });
     } else {
       await media.play();
+      sendToAudience({ type: "play" });
     }
     setIsPlaying(!isPlaying);
+  };
+
+  const handleSkip = () => {
+    sendToAudience({ type: "skip" });
+    onSkip();
   };
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -70,6 +87,7 @@ const PlayerPanel = ({ currentEntry, onSkip }: PlayerPanelProps) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = (e.clientX - rect.left) / rect.width;
     media.currentTime = pct * media.duration;
+    sendToAudience({ type: "time", currentTime: media.currentTime });
   };
 
   const toggleFullscreen = () => {
@@ -79,6 +97,15 @@ const PlayerPanel = ({ currentEntry, onSkip }: PlayerPanelProps) => {
     } else {
       containerRef.current.requestFullscreen();
     }
+  };
+
+  const handleOpenAudience = () => {
+    openAudienceWindow();
+    setAudienceOpen(true);
+    // Send current state immediately
+    setTimeout(() => {
+      sendToAudience({ type: "state", currentEntry, nextSingerName });
+    }, 1000);
   };
 
   return (
@@ -95,7 +122,7 @@ const PlayerPanel = ({ currentEntry, onSkip }: PlayerPanelProps) => {
                 src={currentEntry.song.fileUrl}
                 className="w-full h-full object-contain"
                 onTimeUpdate={handleTimeUpdate}
-                onEnded={onSkip}
+                onEnded={handleSkip}
               />
             ) : (
               <>
@@ -104,7 +131,7 @@ const PlayerPanel = ({ currentEntry, onSkip }: PlayerPanelProps) => {
                     ref={audioRef}
                     src={currentEntry.song.fileUrl}
                     onTimeUpdate={handleTimeUpdate}
-                    onEnded={onSkip}
+                    onEnded={handleSkip}
                   />
                 )}
                 <div className="relative z-20 text-center px-8">
@@ -131,10 +158,7 @@ const PlayerPanel = ({ currentEntry, onSkip }: PlayerPanelProps) => {
       </div>
 
       {/* Progress bar */}
-      <div
-        className="h-1.5 bg-muted cursor-pointer"
-        onClick={handleSeek}
-      >
+      <div className="h-1.5 bg-muted cursor-pointer" onClick={handleSeek}>
         <div
           className="h-full bg-primary neon-box-primary transition-all duration-100"
           style={{ width: `${progress}%` }}
@@ -165,7 +189,7 @@ const PlayerPanel = ({ currentEntry, onSkip }: PlayerPanelProps) => {
 
         {/* Skip */}
         <button
-          onClick={onSkip}
+          onClick={handleSkip}
           disabled={!currentEntry}
           className="p-2 text-muted-foreground hover:text-secondary transition-colors disabled:opacity-30"
           title="Pular"
@@ -179,6 +203,20 @@ const PlayerPanel = ({ currentEntry, onSkip }: PlayerPanelProps) => {
         </span>
 
         <div className="flex-1" />
+
+        {/* Audience Screen */}
+        <button
+          onClick={handleOpenAudience}
+          className={cn(
+            "p-2 transition-colors",
+            audienceOpen
+              ? "text-secondary neon-text-secondary"
+              : "text-muted-foreground hover:text-secondary"
+          )}
+          title="Abrir tela do público (TV/monitor)"
+        >
+          <Tv className="h-5 w-5" />
+        </button>
 
         {/* Volume */}
         <button
