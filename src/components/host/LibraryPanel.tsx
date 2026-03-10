@@ -224,7 +224,7 @@ const LibraryPanel = ({
                   onClick={() => onToggleFavorite(song.id)}
                   className={cn(
                     "flex-shrink-0 p-0.5 transition-colors",
-                    song.isFavorite ? "text-yellow-500" : "text-muted-foreground/30 hover:text-yellow-500/60"
+                    song.isFavorite ? "text-star" : "text-muted-foreground/30 hover:text-star/60"
                   )}
                 >
                   <Star className={cn("h-3.5 w-3.5", song.isFavorite && "fill-current")} />
