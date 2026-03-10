@@ -160,6 +160,9 @@ const HostDashboard = () => {
                 onRemove={library.removeSong}
                 onAddToQueue={handleAddToQueue}
                 onToggleFavorite={library.toggleFavorite}
+                onRemoveDuplicates={library.removeDuplicates}
+                onClearBroken={library.clearBrokenSongs}
+                onClearAllImported={library.clearAllImported}
                 loading={library.loading}
               />
             )}
