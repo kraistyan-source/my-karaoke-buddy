@@ -127,6 +127,60 @@ export function useLibrary() {
     setSongs((prev) => prev.map((s) => (s.id === id ? { ...s, isFavorite: newVal } : s)));
   }, []);
 
+  // Find and remove duplicate songs (same title+artist, keep the one with highest playCount)
+  const removeDuplicates = useCallback(async () => {
+    const grouped = new Map<string, LibrarySong[]>();
+    for (const s of songs) {
+      const key = `${s.titleLower}|||${s.artistLower}`;
+      const arr = grouped.get(key) || [];
+      arr.push(s);
+      grouped.set(key, arr);
+    }
+    const toRemove: string[] = [];
+    for (const [, group] of grouped) {
+      if (group.length <= 1) continue;
+      // Keep the one with highest playCount, then earliest addedAt
+      group.sort((a, b) => b.playCount - a.playCount || a.addedAt - b.addedAt);
+      for (let i = 1; i < group.length; i++) {
+        toRemove.push(group[i].id);
+      }
+    }
+    if (toRemove.length === 0) return 0;
+    for (const id of toRemove) {
+      const url = fileUrlMap.current.get(id);
+      if (url) { URL.revokeObjectURL(url); fileUrlMap.current.delete(id); }
+      await dbRemoveSong(id);
+    }
+    setSongs((prev) => prev.filter((s) => !toRemove.includes(s.id)));
+    return toRemove.length;
+  }, [songs]);
+
+  // Clear all imported (non-builtin) songs whose blob URLs are dead
+  const clearBrokenSongs = useCallback(async () => {
+    const broken = songs.filter(
+      (s) => s.fileType !== "builtin" && !fileUrlMap.current.has(s.id)
+    );
+    if (broken.length === 0) return 0;
+    for (const s of broken) {
+      await dbRemoveSong(s.id);
+    }
+    setSongs((prev) => prev.filter((s) => !broken.find((b) => b.id === s.id)));
+    return broken.length;
+  }, [songs]);
+
+  // Clear ALL imported songs
+  const clearAllImported = useCallback(async () => {
+    const imported = songs.filter((s) => s.fileType !== "builtin");
+    if (imported.length === 0) return 0;
+    for (const s of imported) {
+      const url = fileUrlMap.current.get(s.id);
+      if (url) { URL.revokeObjectURL(url); fileUrlMap.current.delete(s.id); }
+      await dbRemoveSong(s.id);
+    }
+    setSongs((prev) => prev.filter((s) => s.fileType === "builtin"));
+    return imported.length;
+  }, [songs]);
+
   return {
     songs,
     filtered,
@@ -143,6 +197,9 @@ export function useLibrary() {
     addFiles,
     removeSong: removeSongById,
     toggleFavorite: toggleFav,
+    removeDuplicates,
+    clearBrokenSongs,
+    clearAllImported,
     total: songs.length,
     loading,
   };
