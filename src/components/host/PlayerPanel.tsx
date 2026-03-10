@@ -47,6 +47,8 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     return isVideo ? videoRef.current : audioRef.current;
   }, [isVideo]);
 
+  const { theme, themeId } = useTheme();
+
   const broadcastState = useCallback((overrides: Partial<Parameters<typeof sendToAudience>[0]> = {}) => {
     const media = getMedia();
 
@@ -62,8 +64,9 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
             ? media.duration
             : undefined,
       isPlaying: overrides.isPlaying !== undefined ? overrides.isPlaying : isPlaying,
+      themeId,
     });
-  }, [currentEntry, nextSingerName, isPlaying, getMedia]);
+  }, [currentEntry, nextSingerName, isPlaying, getMedia, themeId]);
 
   // Reset on entry change
   useEffect(() => {
