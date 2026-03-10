@@ -62,11 +62,16 @@ const LibraryPanel = ({
   onRemove,
   onAddToQueue,
   onToggleFavorite,
+  onRemoveDuplicates,
+  onClearBroken,
+  onClearAllImported,
   loading,
 }: LibraryPanelProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const folderRef = useRef<HTMLInputElement>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [showTools, setShowTools] = useState(false);
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
 
   return (
     <div className="flex flex-col h-full">
