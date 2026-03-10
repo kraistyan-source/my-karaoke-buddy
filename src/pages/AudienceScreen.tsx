@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Mic2 } from "lucide-react";
-import { onAudienceMessage, AudienceMessage } from "@/lib/audienceBridge";
+import { onAudienceMessage, requestStateFromHost, AudienceMessage } from "@/lib/audienceBridge";
 import { QueueEntry } from "@/stores/useQueue";
 
 const AudienceScreen = () => {
@@ -36,7 +36,18 @@ const AudienceScreen = () => {
           break;
       }
     });
-    return unsub;
+
+    // Request current state from host immediately and with retries
+    requestStateFromHost();
+    const retryInterval = setInterval(() => requestStateFromHost(), 2000);
+    // Stop retrying after we get first state
+    const stopRetry = setTimeout(() => clearInterval(retryInterval), 15000);
+
+    return () => {
+      unsub();
+      clearInterval(retryInterval);
+      clearTimeout(stopRetry);
+    };
   }, []);
 
   const isVideo = currentEntry?.song.fileType === "mp4";
@@ -44,7 +55,6 @@ const AudienceScreen = () => {
 
   return (
     <div className="h-screen w-screen bg-background flex flex-col overflow-hidden cursor-none">
-      {/* Video / Visual Area */}
       <div className="flex-1 relative flex items-center justify-center overflow-hidden">
         <div className="vhs-scanlines absolute inset-0 z-10 pointer-events-none" />
 
@@ -91,7 +101,6 @@ const AudienceScreen = () => {
         )}
       </div>
 
-      {/* Next up bar */}
       {nextSingerName && (
         <div className="px-6 py-3 bg-card/80 border-t border-border flex items-center justify-center gap-3">
           <span className="text-xs text-muted-foreground font-mono uppercase tracking-widest">PRÓXIMO:</span>
