@@ -24,13 +24,13 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
       },
       manifest: {
-        name: "Ruído Rosa — Karaokê",
+        name: "Ruído Rosa — Karaokê Host",
         short_name: "Ruído Rosa",
-        description: "Karaokê para quem canta por diversão. Sem pontuação, sem filtros. Só você e a música.",
+        description: "Sistema de karaokê para eventos e festas. Gerencie fila de cantores, biblioteca e player.",
         theme_color: "#101012",
         background_color: "#101012",
         display: "standalone",
-        orientation: "portrait",
+        orientation: "any",
         start_url: "/",
         icons: [
           {
