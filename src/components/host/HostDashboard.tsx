@@ -5,6 +5,7 @@ import { useQueue } from "@/stores/useQueue";
 import LibraryPanel from "./LibraryPanel";
 import QueuePanel from "./QueuePanel";
 import PlayerPanel from "./PlayerPanel";
+import ThemeSelector from "./ThemeSelector";
 import { cn } from "@/lib/utils";
 
 type Tab = "library" | "queue" | "player";
@@ -44,6 +45,9 @@ const HostDashboard = () => {
         </span>
 
         <div className="flex-1" />
+
+        {/* Theme Selector */}
+        <ThemeSelector />
 
         {/* Now Playing indicator */}
         {queue.currentEntry && (

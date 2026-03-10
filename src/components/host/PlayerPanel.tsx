@@ -6,6 +6,8 @@ import {
 import { QueueEntry } from "@/stores/useQueue";
 import { sendToAudience, openAudienceWindow, onHostMessage } from "@/lib/audienceBridge";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/stores/useTheme";
+import ThemeOverlay from "@/components/overlays/ThemeOverlay";
 
 interface PlayerPanelProps {
   currentEntry: QueueEntry | null;
@@ -45,6 +47,8 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     return isVideo ? videoRef.current : audioRef.current;
   }, [isVideo]);
 
+  const { theme, themeId } = useTheme();
+
   const broadcastState = useCallback((overrides: Partial<Parameters<typeof sendToAudience>[0]> = {}) => {
     const media = getMedia();
 
@@ -60,8 +64,9 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
             ? media.duration
             : undefined,
       isPlaying: overrides.isPlaying !== undefined ? overrides.isPlaying : isPlaying,
+      themeId,
     });
-  }, [currentEntry, nextSingerName, isPlaying, getMedia]);
+  }, [currentEntry, nextSingerName, isPlaying, getMedia, themeId]);
 
   // Reset on entry change
   useEffect(() => {
@@ -74,10 +79,10 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     broadcastState({ currentEntry, nextSingerName, currentTime: 0, duration: 0, isPlaying: false });
   }, [currentEntry?.id]);
 
-  // Broadcast nextSinger changes
+  // Broadcast nextSinger and theme changes
   useEffect(() => {
     broadcastState();
-  }, [nextSingerName]);
+  }, [nextSingerName, themeId]);
 
   // Listen for audience requests
   useEffect(() => {
@@ -202,7 +207,17 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     <div ref={containerRef} className="flex flex-col h-full bg-background">
       {/* Video / Visual Area */}
       <div className="flex-1 relative flex items-center justify-center bg-card overflow-hidden">
-        <div className="vhs-scanlines absolute inset-0 z-10 pointer-events-none" />
+        {/* Theme overlays */}
+        {currentEntry && (
+          <ThemeOverlay
+            theme={theme}
+            singerName={currentEntry.singerName}
+            songTitle={currentEntry.song.title}
+            artist={currentEntry.song.artist}
+            progress={progress}
+            showSingerInfo={!isVideo}
+          />
+        )}
         
         {currentEntry ? (
           <>
@@ -210,7 +225,8 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
               <video
                 ref={videoRef}
                 src={currentEntry.song.fileUrl}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain relative"
+                style={{ zIndex: 3 }}
                 onTimeUpdate={handleTimeUpdate}
                 onEnded={handleSkip}
               />
