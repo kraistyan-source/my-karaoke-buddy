@@ -22,7 +22,10 @@ const SingScreen = ({ song, onBack }: SingScreenProps) => {
   }, [isPlaying]);
 
   useEffect(() => {
-    const idx = song.lyrics.findLastIndex((l) => l.time <= currentTime);
+    let idx = -1;
+    for (let i = song.lyrics.length - 1; i >= 0; i--) {
+      if (song.lyrics[i].time <= currentTime) { idx = i; break; }
+    }
     if (idx >= 0) setActiveLine(idx);
   }, [currentTime, song.lyrics]);
 
