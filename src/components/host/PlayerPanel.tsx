@@ -79,10 +79,10 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     broadcastState({ currentEntry, nextSingerName, currentTime: 0, duration: 0, isPlaying: false });
   }, [currentEntry?.id]);
 
-  // Broadcast nextSinger changes
+  // Broadcast nextSinger and theme changes
   useEffect(() => {
     broadcastState();
-  }, [nextSingerName]);
+  }, [nextSingerName, themeId]);
 
   // Listen for audience requests
   useEffect(() => {
