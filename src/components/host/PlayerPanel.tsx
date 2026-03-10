@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Play, Pause, SkipForward, Volume2, VolumeX, Maximize, Mic2, Tv } from "lucide-react";
+import {
+  Play, Pause, SkipForward, SkipBack, Square, Volume2, VolumeX,
+  Maximize, Mic2, Tv, Gauge, Music
+} from "lucide-react";
 import { QueueEntry } from "@/stores/useQueue";
 import { sendToAudience, openAudienceWindow, onHostMessage } from "@/lib/audienceBridge";
 import { cn } from "@/lib/utils";
@@ -8,12 +11,16 @@ interface PlayerPanelProps {
   currentEntry: QueueEntry | null;
   nextSingerName?: string;
   onSkip: () => void;
+  eventMode?: boolean;
 }
 
-const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps) => {
+const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }: PlayerPanelProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(80);
   const [isMuted, setIsMuted] = useState(false);
@@ -21,8 +28,11 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps)
   const [currentTime, setCurrentTime] = useState("0:00");
   const [duration, setDuration] = useState("0:00");
   const [audienceOpen, setAudienceOpen] = useState(false);
+  const [pitch, setPitch] = useState(0); // -6 to +6 semitones
+  const [speed, setSpeed] = useState(100); // 90-110%
+  const [showControls, setShowControls] = useState(false);
 
-  const isVideo = currentEntry?.song.fileType === "mp4";
+  const isVideo = currentEntry?.song.fileType === "mp4" || currentEntry?.song.fileType === "mkv";
   const hasMedia = currentEntry?.song.fileUrl != null;
 
   const formatTime = (s: number) => {
@@ -35,16 +45,23 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps)
     return isVideo ? videoRef.current : audioRef.current;
   }, [isVideo]);
 
-  // Broadcast state to audience on entry change
+  // Reset on entry change
   useEffect(() => {
     setIsPlaying(false);
     setProgress(0);
     setCurrentTime("0:00");
     setDuration("0:00");
+    setPitch(0);
+    setSpeed(100);
     sendToAudience({ type: "state", currentEntry, nextSingerName });
-  }, [currentEntry?.id, nextSingerName]);
+  }, [currentEntry?.id]);
 
-  // Listen for audience "request-state" and respond
+  // Broadcast nextSinger changes
+  useEffect(() => {
+    sendToAudience({ type: "state", currentEntry, nextSingerName });
+  }, [nextSingerName]);
+
+  // Listen for audience requests
   useEffect(() => {
     const unsub = onHostMessage((msg) => {
       if (msg.type === "request-state") {
@@ -54,11 +71,36 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps)
     return unsub;
   }, [currentEntry, nextSingerName]);
 
+  // Apply volume
   useEffect(() => {
     const media = getMedia();
     if (!media) return;
     media.volume = isMuted ? 0 : volume / 100;
   }, [volume, isMuted, getMedia]);
+
+  // Apply speed via playbackRate
+  useEffect(() => {
+    const media = getMedia();
+    if (!media) return;
+    media.playbackRate = speed / 100;
+  }, [speed, getMedia]);
+
+  // Apply pitch via Web Audio API (preservesPitch = false + playbackRate for pitch shift)
+  useEffect(() => {
+    const media = getMedia();
+    if (!media) return;
+    // Pitch shift: adjust playbackRate and use preservesPitch
+    // When pitch != 0, we shift playback rate and disable preservesPitch
+    const pitchMultiplier = Math.pow(2, pitch / 12);
+    const speedMultiplier = speed / 100;
+    media.playbackRate = speedMultiplier * pitchMultiplier;
+    // @ts-ignore
+    media.preservesPitch = pitch === 0;
+    // @ts-ignore  
+    media.mozPreservesPitch = pitch === 0;
+    // @ts-ignore
+    media.webkitPreservesPitch = pitch === 0;
+  }, [pitch, speed, getMedia]);
 
   const handleTimeUpdate = () => {
     const media = getMedia();
@@ -67,7 +109,6 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps)
     setProgress(pct);
     setCurrentTime(formatTime(media.currentTime));
     setDuration(formatTime(media.duration));
-    // Sync time to audience every ~2 seconds
     if (Math.floor(media.currentTime * 10) % 20 === 0) {
       sendToAudience({ type: "time", currentTime: media.currentTime, duration: media.duration });
     }
@@ -84,6 +125,22 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps)
       sendToAudience({ type: "play" });
     }
     setIsPlaying(!isPlaying);
+  };
+
+  const handleStop = () => {
+    const media = getMedia();
+    if (!media) return;
+    media.pause();
+    media.currentTime = 0;
+    setIsPlaying(false);
+    sendToAudience({ type: "pause" });
+  };
+
+  const handleRestart = () => {
+    const media = getMedia();
+    if (!media) return;
+    media.currentTime = 0;
+    sendToAudience({ type: "time", currentTime: 0 });
   };
 
   const handleSkip = () => {
@@ -112,11 +169,13 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps)
   const handleOpenAudience = () => {
     openAudienceWindow();
     setAudienceOpen(true);
-    // Send current state immediately
     setTimeout(() => {
       sendToAudience({ type: "state", currentEntry, nextSingerName });
-    }, 1000);
+    }, 1500);
   };
+
+  const btnSize = eventMode ? "w-16 h-16" : "w-14 h-14";
+  const iconSize = eventMode ? "h-7 w-7" : "h-6 w-6";
 
   return (
     <div ref={containerRef} className="flex flex-col h-full bg-background">
@@ -146,12 +205,18 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps)
                 )}
                 <div className="relative z-20 text-center px-8">
                   <Mic2 className="h-16 w-16 text-primary mx-auto mb-6 animate-pulse-neon" />
-                  <h2 className="font-display text-2xl md:text-4xl text-primary neon-text-primary animate-flicker mb-2">
+                  <h2 className={cn(
+                    "font-display text-primary neon-text-primary animate-flicker mb-2",
+                    eventMode ? "text-3xl md:text-5xl" : "text-2xl md:text-4xl"
+                  )}>
                     {currentEntry.song.title}
                   </h2>
                   <p className="text-lg text-muted-foreground font-mono">{currentEntry.song.artist}</p>
                   <div className="mt-8 py-3 px-6 rounded bg-secondary/10 border border-secondary/30 inline-block">
-                    <p className="font-display text-xl text-secondary neon-text-secondary">
+                    <p className={cn(
+                      "font-display text-secondary neon-text-secondary",
+                      eventMode ? "text-2xl" : "text-xl"
+                    )}>
                       🎤 {currentEntry.singerName}
                     </p>
                   </div>
@@ -168,21 +233,32 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps)
       </div>
 
       {/* Progress bar */}
-      <div className="h-1.5 bg-muted cursor-pointer" onClick={handleSeek}>
+      <div className="h-2 bg-muted cursor-pointer" onClick={handleSeek}>
         <div
           className="h-full bg-primary neon-box-primary transition-all duration-100"
           style={{ width: `${progress}%` }}
         />
       </div>
 
-      {/* Controls */}
-      <div className="px-6 py-4 border-t border-border flex items-center gap-4">
+      {/* Main Controls */}
+      <div className={cn("px-4 py-3 border-t border-border flex items-center gap-3", eventMode && "py-4 gap-4")}>
+        {/* Restart */}
+        <button
+          onClick={handleRestart}
+          disabled={!currentEntry}
+          className="p-2 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30"
+          title="Reiniciar"
+        >
+          <SkipBack className={iconSize} />
+        </button>
+
         {/* Play/Pause */}
         <button
           onClick={togglePlay}
           disabled={!currentEntry}
           className={cn(
-            "w-14 h-14 rounded-full border-2 flex items-center justify-center transition-all",
+            "rounded-full border-2 flex items-center justify-center transition-all",
+            btnSize,
             currentEntry
               ? isPlaying
                 ? "border-primary bg-primary/10 neon-box-primary hover:bg-primary/20"
@@ -191,10 +267,20 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps)
           )}
         >
           {isPlaying ? (
-            <Pause className="h-6 w-6 text-primary" />
+            <Pause className={cn(iconSize, "text-primary")} />
           ) : (
-            <Play className="h-6 w-6 text-secondary ml-0.5" />
+            <Play className={cn(iconSize, "text-secondary ml-0.5")} />
           )}
+        </button>
+
+        {/* Stop */}
+        <button
+          onClick={handleStop}
+          disabled={!currentEntry}
+          className="p-2 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-30"
+          title="Parar"
+        >
+          <Square className={cn(eventMode ? "h-6 w-6" : "h-5 w-5")} />
         </button>
 
         {/* Skip */}
@@ -204,7 +290,7 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps)
           className="p-2 text-muted-foreground hover:text-secondary transition-colors disabled:opacity-30"
           title="Pular"
         >
-          <SkipForward className="h-6 w-6" />
+          <SkipForward className={iconSize} />
         </button>
 
         {/* Time */}
@@ -214,16 +300,26 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps)
 
         <div className="flex-1" />
 
+        {/* Advanced Controls Toggle */}
+        <button
+          onClick={() => setShowControls(!showControls)}
+          className={cn(
+            "p-2 transition-colors",
+            showControls ? "text-primary" : "text-muted-foreground hover:text-foreground"
+          )}
+          title="Controles avançados"
+        >
+          <Gauge className="h-5 w-5" />
+        </button>
+
         {/* Audience Screen */}
         <button
           onClick={handleOpenAudience}
           className={cn(
             "p-2 transition-colors",
-            audienceOpen
-              ? "text-secondary neon-text-secondary"
-              : "text-muted-foreground hover:text-secondary"
+            audienceOpen ? "text-secondary neon-text-secondary" : "text-muted-foreground hover:text-secondary"
           )}
-          title="Abrir tela do público (TV/monitor)"
+          title="Tela do público (TV)"
         >
           <Tv className="h-5 w-5" />
         </button>
@@ -241,7 +337,7 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps)
           max={100}
           value={isMuted ? 0 : volume}
           onChange={(e) => { setVolume(Number(e.target.value)); setIsMuted(false); }}
-          className="w-24 accent-primary"
+          className="w-20 accent-primary"
         />
 
         {/* Fullscreen */}
@@ -253,6 +349,65 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps)
           <Maximize className="h-5 w-5" />
         </button>
       </div>
+
+      {/* Advanced Controls: Pitch & Speed */}
+      {showControls && (
+        <div className="px-4 py-3 border-t border-border bg-muted/30 flex items-center gap-6">
+          {/* Pitch */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground font-mono w-12">TOM</span>
+            <button
+              onClick={() => setPitch((p) => Math.max(-6, p - 1))}
+              className="w-7 h-7 rounded border border-border text-foreground hover:border-primary hover:text-primary font-mono text-sm flex items-center justify-center transition-colors"
+            >
+              -
+            </button>
+            <span className={cn(
+              "text-sm font-mono w-8 text-center",
+              pitch > 0 ? "text-secondary" : pitch < 0 ? "text-primary" : "text-foreground"
+            )}>
+              {pitch > 0 ? `+${pitch}` : pitch}
+            </span>
+            <button
+              onClick={() => setPitch((p) => Math.min(6, p + 1))}
+              className="w-7 h-7 rounded border border-border text-foreground hover:border-secondary hover:text-secondary font-mono text-sm flex items-center justify-center transition-colors"
+            >
+              +
+            </button>
+            {pitch !== 0 && (
+              <button onClick={() => setPitch(0)} className="text-[10px] text-muted-foreground hover:text-foreground font-mono">
+                RESET
+              </button>
+            )}
+          </div>
+
+          <div className="w-px h-6 bg-border" />
+
+          {/* Speed */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground font-mono w-16">VELOCIDADE</span>
+            <input
+              type="range"
+              min={90}
+              max={110}
+              value={speed}
+              onChange={(e) => setSpeed(Number(e.target.value))}
+              className="w-24 accent-secondary"
+            />
+            <span className={cn(
+              "text-sm font-mono w-10 text-center",
+              speed !== 100 ? "text-secondary" : "text-foreground"
+            )}>
+              {speed}%
+            </span>
+            {speed !== 100 && (
+              <button onClick={() => setSpeed(100)} className="text-[10px] text-muted-foreground hover:text-foreground font-mono">
+                RESET
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
