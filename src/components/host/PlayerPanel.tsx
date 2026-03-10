@@ -44,6 +44,16 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps)
     sendToAudience({ type: "state", currentEntry, nextSingerName });
   }, [currentEntry?.id, nextSingerName]);
 
+  // Listen for audience "request-state" and respond
+  useEffect(() => {
+    const unsub = onHostMessage((msg) => {
+      if (msg.type === "request-state") {
+        sendToAudience({ type: "state", currentEntry, nextSingerName });
+      }
+    });
+    return unsub;
+  }, [currentEntry, nextSingerName]);
+
   useEffect(() => {
     const media = getMedia();
     if (!media) return;
