@@ -6,6 +6,8 @@ import {
 import { QueueEntry } from "@/stores/useQueue";
 import { sendToAudience, openAudienceWindow, onHostMessage } from "@/lib/audienceBridge";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/stores/useTheme";
+import ThemeOverlay from "@/components/overlays/ThemeOverlay";
 
 interface PlayerPanelProps {
   currentEntry: QueueEntry | null;
