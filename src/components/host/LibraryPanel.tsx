@@ -1,7 +1,18 @@
 import { useRef, useState } from "react";
-import { Search, Upload, Music, Trash2, Plus, Star, Heart, Clock, TrendingUp, FolderOpen } from "lucide-react";
+import { Search, Upload, Music, Trash2, Plus, Star, Heart, Clock, TrendingUp, FolderOpen, Copy, Eraser, AlertTriangle } from "lucide-react";
 import { LibrarySong, LibraryFilter } from "@/stores/useLibrary";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface LibraryPanelProps {
   songs: LibrarySong[];
@@ -21,6 +32,9 @@ interface LibraryPanelProps {
   onRemove: (id: string) => void;
   onAddToQueue: (song: LibrarySong) => void;
   onToggleFavorite: (id: string) => void;
+  onRemoveDuplicates: () => Promise<number>;
+  onClearBroken: () => Promise<number>;
+  onClearAllImported: () => Promise<number>;
   loading: boolean;
 }
 
