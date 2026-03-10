@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Play, Pause, SkipForward, Volume2, VolumeX, Maximize, Mic2, Tv } from "lucide-react";
 import { QueueEntry } from "@/stores/useQueue";
-import { sendToAudience, openAudienceWindow } from "@/lib/audienceBridge";
+import { sendToAudience, openAudienceWindow, onHostMessage } from "@/lib/audienceBridge";
 import { cn } from "@/lib/utils";
 
 interface PlayerPanelProps {
@@ -43,6 +43,16 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip }: PlayerPanelProps)
     setDuration("0:00");
     sendToAudience({ type: "state", currentEntry, nextSingerName });
   }, [currentEntry?.id, nextSingerName]);
+
+  // Listen for audience "request-state" and respond
+  useEffect(() => {
+    const unsub = onHostMessage((msg) => {
+      if (msg.type === "request-state") {
+        sendToAudience({ type: "state", currentEntry, nextSingerName });
+      }
+    });
+    return unsub;
+  }, [currentEntry, nextSingerName]);
 
   useEffect(() => {
     const media = getMedia();

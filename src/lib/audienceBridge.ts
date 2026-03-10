@@ -1,12 +1,11 @@
 /**
- * BroadcastChannel bridge for syncing host → audience screen.
- * Sends current entry, playback state, and time updates.
+ * BroadcastChannel bridge for syncing host ↔ audience screen.
  */
 
 import { QueueEntry } from "@/stores/useQueue";
 
 export interface AudienceMessage {
-  type: "state" | "play" | "pause" | "skip" | "time" | "ended";
+  type: "state" | "play" | "pause" | "skip" | "time" | "ended" | "request-state";
   currentEntry?: QueueEntry | null;
   nextSingerName?: string;
   currentTime?: number;
@@ -15,26 +14,48 @@ export interface AudienceMessage {
 
 const CHANNEL_NAME = "ruido-rosa-audience";
 
-let channel: BroadcastChannel | null = null;
+// Each window gets its own channel instance — BroadcastChannel sends to OTHER contexts
+let hostChannel: BroadcastChannel | null = null;
+let audienceChannel: BroadcastChannel | null = null;
 
-function getChannel(): BroadcastChannel {
-  if (!channel) {
-    channel = new BroadcastChannel(CHANNEL_NAME);
-  }
-  return channel;
+function getHostChannel(): BroadcastChannel {
+  if (!hostChannel) hostChannel = new BroadcastChannel(CHANNEL_NAME);
+  return hostChannel;
 }
 
+function getAudienceChannel(): BroadcastChannel {
+  if (!audienceChannel) audienceChannel = new BroadcastChannel(CHANNEL_NAME);
+  return audienceChannel;
+}
+
+// Host sends to audience
 export function sendToAudience(msg: AudienceMessage) {
   try {
-    getChannel().postMessage(msg);
+    getHostChannel().postMessage(msg);
   } catch {}
 }
 
-export function onAudienceMessage(handler: (msg: AudienceMessage) => void): () => void {
-  const ch = getChannel();
+// Host listens for audience requests (like "request-state")
+export function onHostMessage(handler: (msg: AudienceMessage) => void): () => void {
+  const ch = getHostChannel();
   const listener = (e: MessageEvent<AudienceMessage>) => handler(e.data);
   ch.addEventListener("message", listener);
   return () => ch.removeEventListener("message", listener);
+}
+
+// Audience listens for host messages
+export function onAudienceMessage(handler: (msg: AudienceMessage) => void): () => void {
+  const ch = getAudienceChannel();
+  const listener = (e: MessageEvent<AudienceMessage>) => handler(e.data);
+  ch.addEventListener("message", listener);
+  return () => ch.removeEventListener("message", listener);
+}
+
+// Audience requests current state from host
+export function requestStateFromHost() {
+  try {
+    getAudienceChannel().postMessage({ type: "request-state" });
+  } catch {}
 }
 
 export function openAudienceWindow() {
@@ -44,7 +65,6 @@ export function openAudienceWindow() {
     "popup=yes,width=1280,height=720"
   );
   if (w) {
-    // Try to move to second monitor (if available, browser may block this)
     try {
       w.moveTo(window.screen.availWidth, 0);
       w.resizeTo(1280, 720);
