@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Play, Pause, SkipForward, Volume2, VolumeX, Maximize, Mic2, Tv } from "lucide-react";
 import { QueueEntry } from "@/stores/useQueue";
-import { sendToAudience, openAudienceWindow } from "@/lib/audienceBridge";
+import { sendToAudience, openAudienceWindow, onHostMessage } from "@/lib/audienceBridge";
 import { cn } from "@/lib/utils";
 
 interface PlayerPanelProps {
