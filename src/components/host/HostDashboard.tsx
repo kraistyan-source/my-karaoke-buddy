@@ -93,7 +93,11 @@ const HostDashboard = () => {
             />
           </div>
           <div className="flex-1 overflow-hidden">
-            <PlayerPanel currentEntry={queue.currentEntry} onSkip={queue.playNext} />
+            <PlayerPanel
+              currentEntry={queue.currentEntry}
+              nextSingerName={queue.nextUp[0]?.singerName}
+              onSkip={queue.playNext}
+            />
           </div>
         </div>
 
