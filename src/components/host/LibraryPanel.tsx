@@ -211,6 +211,73 @@ const LibraryPanel = ({
           onChange={(e) => e.target.files && onAddFiles(e.target.files)}
           className="hidden"
         />
+
+        {/* Library Tools */}
+        <button
+          onClick={() => setShowTools(!showTools)}
+          className="text-[10px] text-muted-foreground font-mono hover:text-foreground transition-colors"
+        >
+          {showTools ? "▾ ESCONDER FERRAMENTAS" : "▸ FERRAMENTAS DA BIBLIOTECA"}
+        </button>
+
+        {showTools && (
+          <div className="flex flex-col gap-1.5">
+            <button
+              onClick={async () => {
+                const count = await onRemoveDuplicates();
+                toast(count > 0 ? `${count} música(s) duplicada(s) removida(s)` : "Nenhuma duplicata encontrada");
+              }}
+              className="flex items-center justify-center gap-1.5 py-1.5 border border-border rounded hover:border-primary hover:bg-primary/10 transition-all text-muted-foreground hover:text-primary font-mono text-[11px]"
+            >
+              <Copy className="h-3.5 w-3.5" />
+              REMOVER DUPLICATAS
+            </button>
+            <button
+              onClick={async () => {
+                const count = await onClearBroken();
+                toast(count > 0 ? `${count} música(s) quebrada(s) removida(s)` : "Nenhuma música quebrada encontrada");
+              }}
+              className="flex items-center justify-center gap-1.5 py-1.5 border border-border rounded hover:border-secondary hover:bg-secondary/10 transition-all text-muted-foreground hover:text-secondary font-mono text-[11px]"
+            >
+              <Eraser className="h-3.5 w-3.5" />
+              LIMPAR MÚSICAS QUEBRADAS
+            </button>
+            <button
+              onClick={() => setConfirmClearAll(true)}
+              className="flex items-center justify-center gap-1.5 py-1.5 border border-destructive/50 rounded hover:border-destructive hover:bg-destructive/10 transition-all text-muted-foreground hover:text-destructive font-mono text-[11px]"
+            >
+              <AlertTriangle className="h-3.5 w-3.5" />
+              LIMPAR TODA BIBLIOTECA IMPORTADA
+            </button>
+          </div>
+        )}
+
+        <Dialog open={confirmClearAll} onOpenChange={setConfirmClearAll}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="font-display text-destructive">LIMPAR BIBLIOTECA</DialogTitle>
+              <DialogDescription>
+                Isso vai remover TODAS as músicas importadas (arquivos MP4, MP3, MKV). As músicas demo serão mantidas. Esta ação não pode ser desfeita.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline" size="sm">CANCELAR</Button>
+              </DialogClose>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={async () => {
+                  const count = await onClearAllImported();
+                  toast(`${count} música(s) removida(s)`);
+                  setConfirmClearAll(false);
+                }}
+              >
+                CONFIRMAR LIMPEZA
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Results count */}
