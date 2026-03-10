@@ -10,9 +10,20 @@ export interface AudienceMessage {
   nextSingerName?: string;
   currentTime?: number;
   duration?: number;
+  isPlaying?: boolean;
+}
+
+export interface AudienceStateSnapshot {
+  currentEntry: QueueEntry | null;
+  nextSingerName?: string;
+  currentTime?: number;
+  duration?: number;
+  isPlaying?: boolean;
+  updatedAt: number;
 }
 
 const CHANNEL_NAME = "ruido-rosa-audience";
+const SNAPSHOT_KEY = "ruido-rosa-audience-state";
 
 // Each window gets its own channel instance — BroadcastChannel sends to OTHER contexts
 let hostChannel: BroadcastChannel | null = null;
@@ -28,8 +39,58 @@ function getAudienceChannel(): BroadcastChannel {
   return audienceChannel;
 }
 
+function readSnapshot(): AudienceStateSnapshot | null {
+  try {
+    const raw = window.localStorage.getItem(SNAPSHOT_KEY);
+    return raw ? (JSON.parse(raw) as AudienceStateSnapshot) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSnapshot(snapshot: AudienceStateSnapshot) {
+  try {
+    window.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshot));
+  } catch {}
+}
+
+function syncSnapshot(msg: AudienceMessage) {
+  const previous = readSnapshot();
+  const next: AudienceStateSnapshot = {
+    currentEntry:
+      msg.currentEntry !== undefined ? msg.currentEntry : (previous?.currentEntry ?? null),
+    nextSingerName:
+      msg.nextSingerName !== undefined ? msg.nextSingerName : previous?.nextSingerName,
+    currentTime:
+      msg.currentTime !== undefined
+        ? msg.currentTime
+        : msg.type === "state" && msg.currentEntry === null
+          ? 0
+          : previous?.currentTime,
+    duration:
+      msg.duration !== undefined
+        ? msg.duration
+        : msg.type === "state" && msg.currentEntry === null
+          ? 0
+          : previous?.duration,
+    isPlaying:
+      msg.type === "play"
+        ? true
+        : msg.type === "pause" || msg.type === "ended"
+          ? false
+          : msg.isPlaying !== undefined
+            ? msg.isPlaying
+            : previous?.isPlaying ?? false,
+    updatedAt: Date.now(),
+  };
+
+  writeSnapshot(next);
+}
+
 // Host sends to audience
 export function sendToAudience(msg: AudienceMessage) {
+  syncSnapshot(msg);
+
   try {
     getHostChannel().postMessage(msg);
   } catch {}
@@ -49,6 +110,25 @@ export function onAudienceMessage(handler: (msg: AudienceMessage) => void): () =
   const listener = (e: MessageEvent<AudienceMessage>) => handler(e.data);
   ch.addEventListener("message", listener);
   return () => ch.removeEventListener("message", listener);
+}
+
+export function getAudienceStateSnapshot(): AudienceStateSnapshot | null {
+  return readSnapshot();
+}
+
+export function onAudienceStateSnapshotChange(
+  handler: (snapshot: AudienceStateSnapshot) => void,
+): () => void {
+  const listener = (event: StorageEvent) => {
+    if (event.key !== SNAPSHOT_KEY || !event.newValue) return;
+
+    try {
+      handler(JSON.parse(event.newValue) as AudienceStateSnapshot);
+    } catch {}
+  };
+
+  window.addEventListener("storage", listener);
+  return () => window.removeEventListener("storage", listener);
 }
 
 // Audience requests current state from host

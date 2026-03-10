@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Mic2 } from "lucide-react";
-import { onAudienceMessage, requestStateFromHost, AudienceMessage } from "@/lib/audienceBridge";
+import {
+  onAudienceMessage,
+  requestStateFromHost,
+  AudienceMessage,
+  getAudienceStateSnapshot,
+  onAudienceStateSnapshotChange,
+} from "@/lib/audienceBridge";
 import { QueueEntry } from "@/stores/useQueue";
 
 const AudienceScreen = () => {
@@ -8,13 +14,36 @@ const AudienceScreen = () => {
   const [nextSingerName, setNextSingerName] = useState<string | undefined>();
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const pendingSeekRef = useRef<number | null>(null);
 
   useEffect(() => {
+    const applyState = (msg: AudienceMessage) => {
+      setCurrentEntry(msg.currentEntry ?? null);
+      if (msg.nextSingerName !== undefined) setNextSingerName(msg.nextSingerName);
+
+      if (msg.currentTime !== undefined) {
+        pendingSeekRef.current = msg.currentTime;
+
+        if (videoRef.current && videoRef.current.readyState >= 1) {
+          videoRef.current.currentTime = msg.currentTime;
+        }
+      }
+
+      if (msg.isPlaying !== undefined) {
+        setIsPlaying(msg.isPlaying);
+
+        if (msg.isPlaying) {
+          videoRef.current?.play().catch(() => {});
+        } else {
+          videoRef.current?.pause();
+        }
+      }
+    };
+
     const unsub = onAudienceMessage((msg: AudienceMessage) => {
       switch (msg.type) {
         case "state":
-          setCurrentEntry(msg.currentEntry ?? null);
-          if (msg.nextSingerName !== undefined) setNextSingerName(msg.nextSingerName);
+          applyState(msg);
           break;
         case "play":
           setIsPlaying(true);
@@ -28,6 +57,8 @@ const AudienceScreen = () => {
           if (videoRef.current && msg.currentTime !== undefined) {
             const diff = Math.abs(videoRef.current.currentTime - msg.currentTime);
             if (diff > 1) videoRef.current.currentTime = msg.currentTime;
+          } else if (msg.currentTime !== undefined) {
+            pendingSeekRef.current = msg.currentTime;
           }
           break;
         case "skip":
@@ -37,14 +68,22 @@ const AudienceScreen = () => {
       }
     });
 
-    // Request current state from host immediately and with retries
+    const unsubSnapshot = onAudienceStateSnapshotChange((snapshot) => {
+      applyState({ type: "state", ...snapshot });
+    });
+
+    const storedSnapshot = getAudienceStateSnapshot();
+    if (storedSnapshot) {
+      applyState({ type: "state", ...storedSnapshot });
+    }
+
     requestStateFromHost();
     const retryInterval = setInterval(() => requestStateFromHost(), 2000);
-    // Stop retrying after we get first state
     const stopRetry = setTimeout(() => clearInterval(retryInterval), 15000);
 
     return () => {
       unsub();
+      unsubSnapshot();
       clearInterval(retryInterval);
       clearTimeout(stopRetry);
     };
@@ -67,6 +106,15 @@ const AudienceScreen = () => {
                 className="w-full h-full object-contain"
                 autoPlay={isPlaying}
                 muted
+                onLoadedMetadata={() => {
+                  if (pendingSeekRef.current !== null && videoRef.current) {
+                    videoRef.current.currentTime = pendingSeekRef.current;
+                  }
+
+                  if (isPlaying) {
+                    videoRef.current?.play().catch(() => {});
+                  }
+                }}
               />
             ) : (
               <div className="relative z-20 text-center px-12">
