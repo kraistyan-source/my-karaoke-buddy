@@ -46,6 +46,9 @@ const HostDashboard = () => {
 
         <div className="flex-1" />
 
+        {/* Theme Selector */}
+        <ThemeSelector />
+
         {/* Now Playing indicator */}
         {queue.currentEntry && (
           <div className="hidden md:flex items-center gap-2 text-xs font-mono">
