@@ -173,6 +173,11 @@ const HostDashboard = () => {
                 onClearBroken={library.clearBrokenSongs}
                 onClearAllImported={library.clearAllImported}
                 loading={library.loading}
+                watchedFolder={library.watchedFolder}
+                scanning={library.scanning}
+                onPickWatchedFolder={library.pickWatchedFolder}
+                onClearWatchedFolder={library.clearWatchedFolder}
+                onRescanWatchedFolder={library.rescanWatchedFolder}
               />
             )}
             {activeTab === "queue" && (
