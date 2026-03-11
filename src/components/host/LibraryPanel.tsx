@@ -72,6 +72,11 @@ const LibraryPanel = ({
   onClearBroken,
   onClearAllImported,
   loading,
+  watchedFolder,
+  scanning,
+  onPickWatchedFolder,
+  onClearWatchedFolder,
+  onRescanWatchedFolder,
 }: LibraryPanelProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const folderRef = useRef<HTMLInputElement>(null);
