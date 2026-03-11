@@ -3,14 +3,56 @@ import {
   DBSong,
   getAllSongs,
   addSong,
+  addSongsBatch,
   removeSong as dbRemoveSong,
   toggleFavorite as dbToggleFavorite,
   seedDemoSongs,
 } from "@/lib/db";
+import {
+  isElectron,
+  scanMediaFiles,
+  getWatchedFolder,
+  setWatchedFolder as saveWatchedFolder,
+  openDirectory,
+  localFileUrl,
+  ScannedFile,
+} from "@/lib/electronBridge";
+import { toast } from "sonner";
 
 export type LibrarySong = DBSong & { fileUrl?: string };
 
 export type LibraryFilter = "all" | "favorites" | "recent" | "mostPlayed";
+
+// Parse artist/title from filename like "Artist - Title.mp4"
+function parseFileName(name: string): { artist: string; title: string } {
+  const base = name.replace(/\.[^.]+$/, "");
+  const parts = base.split(" - ");
+  if (parts.length > 1) {
+    return { artist: parts[0].trim(), title: parts.slice(1).join(" - ").trim() };
+  }
+  return { artist: "Artista Desconhecido", title: base.trim() };
+}
+
+// Build a DBSong from a scanned local file
+function scannedFileToDB(file: ScannedFile): DBSong {
+  const { artist, title } = parseFileName(file.name);
+  return {
+    id: `local-${file.path}`,
+    title,
+    titleLower: title.toLowerCase(),
+    artist,
+    artistLower: artist.toLowerCase(),
+    duration: "--:--",
+    genre: "Importado",
+    language: "",
+    fileType: (["mp4", "mp3", "mkv"].includes(file.ext) ? file.ext : "mp4") as DBSong["fileType"],
+    fileName: file.name,
+    filePath: file.path,
+    isFavorite: false,
+    playCount: 0,
+    addedAt: Date.now(),
+  };
+}
 
 export function useLibrary() {
   const [songs, setSongs] = useState<LibrarySong[]>([]);
@@ -19,22 +61,110 @@ export function useLibrary() {
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<LibraryFilter>("all");
   const [loading, setLoading] = useState(true);
+  const [watchedFolder, setWatchedFolderState] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
   const fileUrlMap = useRef<Map<string, string>>(new Map());
 
-  // Load songs from IndexedDB
+  // Scan a folder and merge new songs into DB + state
+  const scanFolder = useCallback(async (folderPath: string) => {
+    setScanning(true);
+    try {
+      const files = await scanMediaFiles(folderPath);
+      if (files.length === 0) {
+        setScanning(false);
+        return 0;
+      }
+
+      // Get existing song IDs to avoid duplicates
+      const existing = await getAllSongs();
+      const existingIds = new Set(existing.map((s) => s.id));
+
+      const newSongs: DBSong[] = [];
+      for (const file of files) {
+        const dbSong = scannedFileToDB(file);
+        if (!existingIds.has(dbSong.id)) {
+          newSongs.push(dbSong);
+        }
+      }
+
+      if (newSongs.length > 0) {
+        await addSongsBatch(newSongs);
+      }
+
+      // Reload all songs from DB
+      const all = await getAllSongs();
+      const withUrls = all.map((s) => ({
+        ...s,
+        fileUrl: s.filePath ? localFileUrl(s.filePath) : fileUrlMap.current.get(s.id),
+      }));
+      setSongs(withUrls);
+      setScanning(false);
+      return newSongs.length;
+    } catch (err) {
+      console.error("Scan folder error:", err);
+      setScanning(false);
+      return 0;
+    }
+  }, []);
+
+  // Load songs from IndexedDB + auto-scan watched folder
   useEffect(() => {
     (async () => {
       await seedDemoSongs();
       const all = await getAllSongs();
-      // Restore any session file URLs
       const withUrls = all.map((s) => ({
         ...s,
-        fileUrl: fileUrlMap.current.get(s.id),
+        fileUrl: s.filePath ? localFileUrl(s.filePath) : fileUrlMap.current.get(s.id),
       }));
       setSongs(withUrls);
       setLoading(false);
+
+      // Auto-scan watched folder on startup (Electron only)
+      if (isElectron()) {
+        const folder = getWatchedFolder();
+        if (folder) {
+          setWatchedFolderState(folder);
+          const count = await scanFolder(folder);
+          if (count > 0) {
+            toast.success(`${count} nova(s) música(s) encontrada(s) na pasta monitorada`);
+          }
+        }
+      }
     })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pick and set watched folder
+  const pickWatchedFolder = useCallback(async () => {
+    const folder = await openDirectory();
+    if (!folder) return;
+    saveWatchedFolder(folder);
+    setWatchedFolderState(folder);
+    const count = await scanFolder(folder);
+    toast.success(
+      count > 0
+        ? `Pasta monitorada definida! ${count} música(s) importada(s).`
+        : "Pasta monitorada definida! Nenhuma música nova encontrada."
+    );
+  }, [scanFolder]);
+
+  // Remove watched folder
+  const clearWatchedFolder = useCallback(() => {
+    saveWatchedFolder(null);
+    setWatchedFolderState(null);
+    toast("Pasta monitorada removida");
   }, []);
+
+  // Re-scan watched folder manually
+  const rescanWatchedFolder = useCallback(async () => {
+    const folder = watchedFolder || getWatchedFolder();
+    if (!folder) return;
+    const count = await scanFolder(folder);
+    toast.success(
+      count > 0
+        ? `${count} nova(s) música(s) encontrada(s)`
+        : "Nenhuma música nova encontrada"
+    );
+  }, [watchedFolder, scanFolder]);
 
   // Derived: genres & languages
   const genres = useMemo(() => [...new Set(songs.map((s) => s.genre).filter(Boolean))].sort(), [songs]);
@@ -44,7 +174,6 @@ export function useLibrary() {
   const filtered = useMemo(() => {
     let result = songs;
 
-    // Text search
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -52,12 +181,9 @@ export function useLibrary() {
       );
     }
 
-    // Genre
     if (genreFilter) result = result.filter((s) => s.genre === genreFilter);
-    // Language
     if (languageFilter) result = result.filter((s) => s.language === languageFilter);
 
-    // Special filters
     switch (activeFilter) {
       case "favorites":
         result = result.filter((s) => s.isFavorite);
@@ -81,10 +207,7 @@ export function useLibrary() {
       const ext = file.name.split(".").pop()?.toLowerCase();
       if (!ext || !["mp4", "mp3", "mkv"].includes(ext)) continue;
 
-      const nameParts = file.name.replace(/\.[^.]+$/, "").split(" - ");
-      const artist = nameParts.length > 1 ? nameParts[0].trim() : "Artista Desconhecido";
-      const title = nameParts.length > 1 ? nameParts.slice(1).join(" - ").trim() : nameParts[0].trim();
-
+      const { artist, title } = parseFileName(file.name);
       const url = URL.createObjectURL(file);
       const id = `import-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       fileUrlMap.current.set(id, url);
@@ -127,7 +250,6 @@ export function useLibrary() {
     setSongs((prev) => prev.map((s) => (s.id === id ? { ...s, isFavorite: newVal } : s)));
   }, []);
 
-  // Find and remove duplicate songs (same title+artist, keep the one with highest playCount)
   const removeDuplicates = useCallback(async () => {
     const grouped = new Map<string, LibrarySong[]>();
     for (const s of songs) {
@@ -139,7 +261,6 @@ export function useLibrary() {
     const toRemove: string[] = [];
     for (const [, group] of grouped) {
       if (group.length <= 1) continue;
-      // Keep the one with highest playCount, then earliest addedAt
       group.sort((a, b) => b.playCount - a.playCount || a.addedAt - b.addedAt);
       for (let i = 1; i < group.length; i++) {
         toRemove.push(group[i].id);
@@ -155,10 +276,9 @@ export function useLibrary() {
     return toRemove.length;
   }, [songs]);
 
-  // Clear all imported (non-builtin) songs whose blob URLs are dead
   const clearBrokenSongs = useCallback(async () => {
     const broken = songs.filter(
-      (s) => s.fileType !== "builtin" && !fileUrlMap.current.has(s.id)
+      (s) => s.fileType !== "builtin" && !s.filePath && !fileUrlMap.current.has(s.id)
     );
     if (broken.length === 0) return 0;
     for (const s of broken) {
@@ -168,7 +288,6 @@ export function useLibrary() {
     return broken.length;
   }, [songs]);
 
-  // Clear ALL imported songs
   const clearAllImported = useCallback(async () => {
     const imported = songs.filter((s) => s.fileType !== "builtin");
     if (imported.length === 0) return 0;
@@ -202,5 +321,11 @@ export function useLibrary() {
     clearAllImported,
     total: songs.length,
     loading,
+    // Watched folder
+    watchedFolder,
+    scanning,
+    pickWatchedFolder,
+    clearWatchedFolder,
+    rescanWatchedFolder,
   };
 }

@@ -41,6 +41,8 @@ function createWindow() {
   });
 }
 
+const MEDIA_EXTENSIONS = new Set(["mp4", "mp3", "mkv", "cdg", "kar", "mid"]);
+
 // IPC: open folder picker
 ipcMain.handle("dialog:openDirectory", async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
@@ -72,6 +74,37 @@ ipcMain.handle("fs:readDir", async (_event, dirPath) => {
   } catch {
     return [];
   }
+});
+
+// IPC: recursively scan directory for media files
+ipcMain.handle("fs:scanMediaFiles", async (_event, dirPath) => {
+  const results = [];
+
+  async function scan(dir) {
+    try {
+      const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          await scan(fullPath);
+        } else {
+          const ext = path.extname(entry.name).slice(1).toLowerCase();
+          if (MEDIA_EXTENSIONS.has(ext)) {
+            results.push({
+              name: entry.name,
+              path: fullPath,
+              ext,
+            });
+          }
+        }
+      }
+    } catch {
+      // skip inaccessible dirs
+    }
+  }
+
+  await scan(dirPath);
+  return results;
 });
 
 // IPC: check if file exists
