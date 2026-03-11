@@ -1,13 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Play, Pause, SkipForward, SkipBack, Square, Volume2, VolumeX,
-  Maximize, Mic2, Tv, Gauge, Music
+  Maximize, Mic2, Tv, Gauge, Music, Settings2
 } from "lucide-react";
 import { QueueEntry } from "@/stores/useQueue";
 import { sendToAudience, openAudienceWindow, onHostMessage } from "@/lib/audienceBridge";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/stores/useTheme";
 import ThemeOverlay from "@/components/overlays/ThemeOverlay";
+import AudioDeviceSelector from "./AudioDeviceSelector";
+import ScoreDisplay from "./ScoreDisplay";
+import { useAudioDevices } from "@/stores/useAudioDevices";
+import { useScoring, SingScore } from "@/stores/useScoring";
 
 interface PlayerPanelProps {
   currentEntry: QueueEntry | null;
