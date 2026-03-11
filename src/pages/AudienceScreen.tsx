@@ -83,6 +83,12 @@ const AudienceScreen = () => {
           setIsPlaying(false);
           setProgress(0);
           break;
+        case "score":
+          if (msg.score) {
+            setScoreDisplay(msg.score);
+            setTimeout(() => setScoreDisplay(null), 8000);
+          }
+          break;
       }
     });
 
