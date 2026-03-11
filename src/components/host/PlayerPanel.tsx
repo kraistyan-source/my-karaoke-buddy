@@ -98,12 +98,15 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     return unsub;
   }, [broadcastState]);
 
-  // Apply volume
+  // Apply volume & output device
   useEffect(() => {
     const media = getMedia();
     if (!media) return;
     media.volume = isMuted ? 0 : volume / 100;
-  }, [volume, isMuted, getMedia]);
+    if (audioDevices.selectedOutput && "setSinkId" in media) {
+      (media as any).setSinkId(audioDevices.selectedOutput).catch(() => {});
+    }
+  }, [volume, isMuted, getMedia, audioDevices.selectedOutput]);
 
   // Apply speed via playbackRate
   useEffect(() => {
