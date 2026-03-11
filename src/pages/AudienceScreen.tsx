@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Mic2 } from "lucide-react";
+import { Mic2, Star, Trophy } from "lucide-react";
 import {
   onAudienceMessage,
   requestStateFromHost,
@@ -10,6 +10,7 @@ import {
 import { QueueEntry } from "@/stores/useQueue";
 import { ThemeId, themes } from "@/lib/themes";
 import ThemeOverlay from "@/components/overlays/ThemeOverlay";
+import { cn } from "@/lib/utils";
 
 const AudienceScreen = () => {
   const [currentEntry, setCurrentEntry] = useState<QueueEntry | null>(null);
