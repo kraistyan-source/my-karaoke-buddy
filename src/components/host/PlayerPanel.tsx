@@ -158,6 +158,11 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     } else {
       await media.play();
       sendToAudience({ type: "play" });
+      // Start scoring if mic is available
+      if (!scoring.isScoring) {
+        const analyser = await audioDevices.startMic(audioDevices.selectedInput);
+        if (analyser) scoring.startScoring(analyser);
+      }
     }
     setIsPlaying(!isPlaying);
   };
