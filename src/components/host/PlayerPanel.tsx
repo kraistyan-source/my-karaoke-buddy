@@ -184,6 +184,15 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
   };
 
   const handleSkip = () => {
+    // Stop scoring and save result
+    if (scoring.isScoring && currentEntry) {
+      const result = scoring.stopScoring(currentEntry.singerName, currentEntry.song.title);
+      if (result) {
+        setLastScore(result);
+        sendToAudience({ type: "score" as any, score: result });
+      }
+    }
+    audioDevices.stopMic();
     sendToAudience({ type: "skip", isPlaying: false });
     onSkip();
   };
