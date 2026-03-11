@@ -1,13 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Play, Pause, SkipForward, SkipBack, Square, Volume2, VolumeX,
-  Maximize, Mic2, Tv, Gauge, Music
+  Maximize, Mic2, Tv, Gauge, Music, Settings2
 } from "lucide-react";
 import { QueueEntry } from "@/stores/useQueue";
 import { sendToAudience, openAudienceWindow, onHostMessage } from "@/lib/audienceBridge";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/stores/useTheme";
 import ThemeOverlay from "@/components/overlays/ThemeOverlay";
+import AudioDeviceSelector from "./AudioDeviceSelector";
+import ScoreDisplay from "./ScoreDisplay";
+import { useAudioDevices } from "@/stores/useAudioDevices";
+import { useScoring, SingScore } from "@/stores/useScoring";
 
 interface PlayerPanelProps {
   currentEntry: QueueEntry | null;
@@ -30,9 +34,14 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
   const [currentTime, setCurrentTime] = useState("0:00");
   const [duration, setDuration] = useState("0:00");
   const [audienceOpen, setAudienceOpen] = useState(false);
-  const [pitch, setPitch] = useState(0); // -6 to +6 semitones
-  const [speed, setSpeed] = useState(100); // 90-110%
+  const [pitch, setPitch] = useState(0);
+  const [speed, setSpeed] = useState(100);
   const [showControls, setShowControls] = useState(false);
+  const [showDevices, setShowDevices] = useState(false);
+  const [lastScore, setLastScore] = useState<SingScore | null>(null);
+
+  const audioDevices = useAudioDevices();
+  const scoring = useScoring();
 
   const isVideo = currentEntry?.song.fileType === "mp4" || currentEntry?.song.fileType === "mkv";
   const hasMedia = currentEntry?.song.fileUrl != null;
@@ -94,12 +103,15 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     return unsub;
   }, [broadcastState]);
 
-  // Apply volume
+  // Apply volume & output device
   useEffect(() => {
     const media = getMedia();
     if (!media) return;
     media.volume = isMuted ? 0 : volume / 100;
-  }, [volume, isMuted, getMedia]);
+    if (audioDevices.selectedOutput && "setSinkId" in media) {
+      (media as any).setSinkId(audioDevices.selectedOutput).catch(() => {});
+    }
+  }, [volume, isMuted, getMedia, audioDevices.selectedOutput]);
 
   // Apply speed via playbackRate
   useEffect(() => {
@@ -146,6 +158,11 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     } else {
       await media.play();
       sendToAudience({ type: "play" });
+      // Start scoring if mic is available
+      if (!scoring.isScoring) {
+        const analyser = await audioDevices.startMic(audioDevices.selectedInput);
+        if (analyser) scoring.startScoring(analyser);
+      }
     }
     setIsPlaying(!isPlaying);
   };
@@ -167,6 +184,15 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
   };
 
   const handleSkip = () => {
+    // Stop scoring and save result
+    if (scoring.isScoring && currentEntry) {
+      const result = scoring.stopScoring(currentEntry.singerName, currentEntry.song.title);
+      if (result) {
+        setLastScore(result);
+        sendToAudience({ type: "score" as any, score: result });
+      }
+    }
+    audioDevices.stopMic();
     sendToAudience({ type: "skip", isPlaying: false });
     onSkip();
   };
@@ -335,7 +361,22 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
           {currentTime} / {duration}
         </span>
 
-        <div className="flex-1" />
+        <div className="flex-1">
+          {/* Score display inline */}
+          <ScoreDisplay score={lastScore} currentScore={scoring.currentScore} isScoring={scoring.isScoring} />
+        </div>
+
+        {/* Audio Devices Toggle */}
+        <button
+          onClick={() => setShowDevices(!showDevices)}
+          className={cn(
+            "p-2 transition-colors",
+            showDevices ? "text-primary" : "text-muted-foreground hover:text-foreground"
+          )}
+          title="Dispositivos de áudio"
+        >
+          <Settings2 className="h-5 w-5" />
+        </button>
 
         {/* Advanced Controls Toggle */}
         <button
@@ -443,6 +484,21 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Audio Device Selector */}
+      {showDevices && (
+        <div className="px-4 py-3 border-t border-border bg-muted/30">
+          <AudioDeviceSelector
+            inputs={audioDevices.inputs}
+            outputs={audioDevices.outputs}
+            selectedInput={audioDevices.selectedInput}
+            selectedOutput={audioDevices.selectedOutput}
+            onSelectInput={audioDevices.setSelectedInput}
+            onSelectOutput={(id) => audioDevices.setOutputDevice(id, getMedia() ?? undefined)}
+            onRefresh={audioDevices.enumerate}
+          />
         </div>
       )}
     </div>
