@@ -113,6 +113,11 @@ const HostDashboard = () => {
               onClearBroken={library.clearBrokenSongs}
               onClearAllImported={library.clearAllImported}
               loading={library.loading}
+              watchedFolder={library.watchedFolder}
+              scanning={library.scanning}
+              onPickWatchedFolder={library.pickWatchedFolder}
+              onClearWatchedFolder={library.clearWatchedFolder}
+              onRescanWatchedFolder={library.rescanWatchedFolder}
             />
           </div>
           <div className={cn("border-r border-border overflow-hidden flex-shrink-0", eventMode ? "w-[260px]" : "w-[300px]")}>
