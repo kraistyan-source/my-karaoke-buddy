@@ -34,9 +34,14 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
   const [currentTime, setCurrentTime] = useState("0:00");
   const [duration, setDuration] = useState("0:00");
   const [audienceOpen, setAudienceOpen] = useState(false);
-  const [pitch, setPitch] = useState(0); // -6 to +6 semitones
-  const [speed, setSpeed] = useState(100); // 90-110%
+  const [pitch, setPitch] = useState(0);
+  const [speed, setSpeed] = useState(100);
   const [showControls, setShowControls] = useState(false);
+  const [showDevices, setShowDevices] = useState(false);
+  const [lastScore, setLastScore] = useState<SingScore | null>(null);
+
+  const audioDevices = useAudioDevices();
+  const scoring = useScoring();
 
   const isVideo = currentEntry?.song.fileType === "mp4" || currentEntry?.song.fileType === "mkv";
   const hasMedia = currentEntry?.song.fileUrl != null;
