@@ -1,0 +1,22 @@
+appId: com.ruidorosa.karaoke
+productName: Ruído Rosa Karaokê
+directories:
+  output: release
+  buildResources: public/icons
+files:
+  - dist/**/*
+  - electron/**/*
+  - public/icons/**/*
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+  icon: public/icons/icon-512.png
+portable:
+  artifactName: "RuidoRosa-${version}-Portable.exe"
+extraResources:
+  - from: data
+    to: data
+    filter:
+      - "**/*"
