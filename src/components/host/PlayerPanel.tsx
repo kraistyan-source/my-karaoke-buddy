@@ -486,7 +486,21 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
           </div>
         </div>
       )}
-    </div>
+
+      {/* Audio Device Selector */}
+      {showDevices && (
+        <div className="px-4 py-3 border-t border-border bg-muted/30">
+          <AudioDeviceSelector
+            inputs={audioDevices.inputs}
+            outputs={audioDevices.outputs}
+            selectedInput={audioDevices.selectedInput}
+            selectedOutput={audioDevices.selectedOutput}
+            onSelectInput={audioDevices.setSelectedInput}
+            onSelectOutput={(id) => audioDevices.setOutputDevice(id, getMedia() ?? undefined)}
+            onRefresh={audioDevices.enumerate}
+          />
+        </div>
+      )}
   );
 };
 
