@@ -205,6 +205,40 @@ const AudienceScreen = () => {
         )}
       </div>
 
+      {/* Score Overlay */}
+      {scoreDisplay && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 animate-in fade-in duration-500">
+          <div className="text-center space-y-4">
+            <Trophy className="h-16 w-16 mx-auto" style={{ color: `hsl(${theme.colors.glow1})` }} />
+            <p className="font-mono text-lg text-muted-foreground">{scoreDisplay.singerName}</p>
+            <p
+              className="font-display text-7xl md:text-9xl font-bold"
+              style={{
+                color: `hsl(${theme.colors.glow1})`,
+                textShadow: `0 0 20px hsl(${theme.colors.glow1} / 0.6), 0 0 60px hsl(${theme.colors.glow1} / 0.3)`,
+              }}
+            >
+              {scoreDisplay.score}
+            </p>
+            <div className="flex justify-center gap-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className={cn(
+                    "h-8 w-8 transition-all",
+                    i < scoreDisplay.stars ? "fill-current" : "opacity-20"
+                  )}
+                  style={{ color: `hsl(${theme.colors.glow2})` }}
+                />
+              ))}
+            </div>
+            <p className="font-display text-xl" style={{ color: `hsl(${theme.colors.glow2})` }}>
+              {scoreDisplay.score >= 90 ? "ESPETACULAR! 🔥" : scoreDisplay.score >= 75 ? "ARRASOU! 🎤" : scoreDisplay.score >= 55 ? "MANDOU BEM! 👏" : scoreDisplay.score >= 35 ? "BOA TENTATIVA! 😄" : "VALEU A CORAGEM! 💪"}
+            </p>
+          </div>
+        </div>
+      )}
+
       {nextSingerName && (
         <div className="px-6 py-3 bg-card/80 border-t border-border flex items-center justify-center gap-3">
           <span className="text-xs text-muted-foreground font-mono uppercase tracking-widest">PRÓXIMO:</span>
