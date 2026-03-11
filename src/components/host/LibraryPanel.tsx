@@ -37,6 +37,11 @@ interface LibraryPanelProps {
   onClearBroken: () => Promise<number>;
   onClearAllImported: () => Promise<number>;
   loading: boolean;
+  watchedFolder?: string | null;
+  scanning?: boolean;
+  onPickWatchedFolder?: () => void;
+  onClearWatchedFolder?: () => void;
+  onRescanWatchedFolder?: () => void;
 }
 
 const FILTERS: { id: LibraryFilter; label: string; icon: React.ElementType }[] = [
