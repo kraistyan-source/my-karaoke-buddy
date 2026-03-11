@@ -223,6 +223,48 @@ const LibraryPanel = ({
           className="hidden"
         />
 
+        {/* Watched Folder (Electron only) */}
+        {isElectron() && (
+          <div className="space-y-1.5">
+            {watchedFolder ? (
+              <div className="flex items-center gap-1.5 p-2 border border-primary/30 rounded bg-primary/5">
+                <FolderSync className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-mono text-primary truncate">
+                    PASTA MONITORADA
+                  </p>
+                  <p className="text-[9px] text-muted-foreground truncate" title={watchedFolder}>
+                    {watchedFolder}
+                  </p>
+                </div>
+                <button
+                  onClick={onRescanWatchedFolder}
+                  disabled={scanning}
+                  className="p-1 rounded hover:bg-primary/20 text-primary transition-colors disabled:opacity-50"
+                  title="Re-escanear pasta"
+                >
+                  <RefreshCw className={cn("h-3.5 w-3.5", scanning && "animate-spin")} />
+                </button>
+                <button
+                  onClick={onClearWatchedFolder}
+                  className="p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                  title="Remover pasta monitorada"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onPickWatchedFolder}
+                className="w-full flex items-center justify-center gap-1.5 py-2 border border-dashed border-primary/40 rounded hover:border-primary hover:neon-box-primary transition-all text-muted-foreground hover:text-primary font-mono text-[11px]"
+              >
+                <FolderSync className="h-3.5 w-3.5" />
+                DEFINIR PASTA MONITORADA
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Library Tools */}
         <button
           onClick={() => setShowTools(!showTools)}
