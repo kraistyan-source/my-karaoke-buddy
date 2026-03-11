@@ -361,7 +361,22 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
           {currentTime} / {duration}
         </span>
 
-        <div className="flex-1" />
+        <div className="flex-1">
+          {/* Score display inline */}
+          <ScoreDisplay score={lastScore} currentScore={scoring.currentScore} isScoring={scoring.isScoring} />
+        </div>
+
+        {/* Audio Devices Toggle */}
+        <button
+          onClick={() => setShowDevices(!showDevices)}
+          className={cn(
+            "p-2 transition-colors",
+            showDevices ? "text-primary" : "text-muted-foreground hover:text-foreground"
+          )}
+          title="Dispositivos de áudio"
+        >
+          <Settings2 className="h-5 w-5" />
+        </button>
 
         {/* Advanced Controls Toggle */}
         <button
