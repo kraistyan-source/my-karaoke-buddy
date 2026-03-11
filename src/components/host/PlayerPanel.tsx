@@ -501,6 +501,7 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
           />
         </div>
       )}
+    </div>
   );
 };
 
