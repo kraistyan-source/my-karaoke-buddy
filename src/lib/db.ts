@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = "ruido-rosa-db";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export interface DBSong {
   id: string;
@@ -13,6 +13,7 @@ export interface DBSong {
   artist: string;
   artistLower: string; // indexed for fast search
   duration: string;
+  durationSec: number; // seconds, 0 = unknown
   genre: string;
   language: string;
   fileType: "mp4" | "mp3" | "mkv" | "builtin";
@@ -49,6 +50,7 @@ function openDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
+      const oldVersion = event.oldVersion;
 
       if (!db.objectStoreNames.contains("songs")) {
         const songStore = db.createObjectStore("songs", { keyPath: "id" });
@@ -60,6 +62,12 @@ function openDB(): Promise<IDBDatabase> {
         songStore.createIndex("playCount", "playCount", { unique: false });
         songStore.createIndex("lastPlayed", "lastPlayed", { unique: false });
         songStore.createIndex("addedAt", "addedAt", { unique: false });
+        songStore.createIndex("durationSec", "durationSec", { unique: false });
+      } else if (oldVersion < 3) {
+        const songStore = (event.target as IDBOpenDBRequest).transaction!.objectStore("songs");
+        if (!songStore.indexNames.contains("durationSec")) {
+          songStore.createIndex("durationSec", "durationSec", { unique: false });
+        }
       }
 
       if (!db.objectStoreNames.contains("singerHistory")) {

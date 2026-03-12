@@ -6,6 +6,7 @@ import {
   addSongsBatch,
   removeSong as dbRemoveSong,
   toggleFavorite as dbToggleFavorite,
+  updateSong,
   clearDemoSongs,
 } from "@/lib/db";
 import {
@@ -17,6 +18,7 @@ import {
   localFileUrl,
   ScannedFile,
 } from "@/lib/electronBridge";
+import { probeDuration, formatDuration } from "@/lib/mediaDuration";
 import { toast } from "sonner";
 
 export type LibrarySong = DBSong & { fileUrl?: string };
@@ -44,6 +46,7 @@ function scannedFileToDB(file: ScannedFile): DBSong {
     artist,
     artistLower: artist.toLowerCase(),
     duration: "--:--",
+    durationSec: 0,
     genre: "Importado",
     language: "",
     fileType: (["mp4", "mp3", "mkv"].includes(file.ext) ? file.ext : "mp4") as DBSong["fileType"],
@@ -109,8 +112,10 @@ export function useLibrary() {
     }
   }, []);
 
-  // Load songs from IndexedDB + auto-scan watched folder
+  // Load songs from IndexedDB + auto-scan watched folder + probe durations
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       await clearDemoSongs();
       const all = await getAllSongs();
@@ -132,7 +137,39 @@ export function useLibrary() {
           }
         }
       }
+
+      // Background: probe durations for songs that don't have one yet
+      const needProbe = withUrls.filter((s) => (!s.durationSec || s.durationSec === 0) && s.fileUrl);
+      if (needProbe.length > 0) {
+        const BATCH = 5;
+        for (let i = 0; i < needProbe.length; i += BATCH) {
+          if (cancelled) break;
+          const batch = needProbe.slice(i, i + BATCH);
+          const results = await Promise.all(
+            batch.map(async (s) => {
+              const isVideo = s.fileType === "mp4" || s.fileType === "mkv";
+              const dur = await probeDuration(s.fileUrl!, isVideo);
+              return { id: s.id, dur };
+            })
+          );
+          for (const { id, dur } of results) {
+            if (dur > 0) {
+              await updateSong(id, { durationSec: dur, duration: formatDuration(dur) });
+            }
+          }
+          // Update state in batches
+          if (!cancelled) {
+            const updated = await getAllSongs();
+            setSongs(updated.map((s) => ({
+              ...s,
+              fileUrl: s.filePath ? localFileUrl(s.filePath) : fileUrlMap.current.get(s.id),
+            })));
+          }
+        }
+      }
     })();
+
+    return () => { cancelled = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Pick and set watched folder
@@ -201,14 +238,7 @@ export function useLibrary() {
         result = [...result];
         switch (sortBy) {
           case "duration":
-            result.sort((a, b) => {
-              const parseDur = (d: string) => {
-                const parts = d.split(":").map(Number);
-                if (parts.length === 2) return parts[0] * 60 + parts[1];
-                return 0;
-              };
-              return parseDur(a.duration) - parseDur(b.duration);
-            });
+            result.sort((a, b) => (a.durationSec || 0) - (b.durationSec || 0));
             break;
           case "addedAt":
             result.sort((a, b) => b.addedAt - a.addedAt);
@@ -244,6 +274,7 @@ export function useLibrary() {
         artist,
         artistLower: artist.toLowerCase(),
         duration: "--:--",
+        durationSec: 0,
         genre: "Importado",
         language: "",
         fileType: ext as "mp4" | "mp3" | "mkv",

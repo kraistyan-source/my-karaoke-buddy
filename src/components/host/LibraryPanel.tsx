@@ -462,6 +462,9 @@ const VirtualSongList = ({
                 <p className="text-[11px] text-muted-foreground truncate">{song.artist}</p>
               </div>
               <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-muted-foreground font-mono tabular-nums">
+                  {song.durationSec > 0 ? song.duration : "--:--"}
+                </span>
                 {song.playCount > 0 && (
                   <span className="text-[9px] text-muted-foreground/60 font-mono">{song.playCount}×</span>
                 )}
