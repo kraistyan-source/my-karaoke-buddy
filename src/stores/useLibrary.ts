@@ -61,7 +61,7 @@ export function useLibrary() {
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<LibraryFilter>("all");
-  const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<LibrarySort>("alpha");
   const [watchedFolder, setWatchedFolderState] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const fileUrlMap = useRef<Map<string, string>>(new Map());
