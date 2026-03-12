@@ -53,6 +53,12 @@ const FILTERS: { id: LibraryFilter; label: string; icon: React.ElementType }[] =
   { id: "mostPlayed", label: "TOP", icon: TrendingUp },
 ];
 
+const SORTS: { id: LibrarySort; label: string; icon: React.ElementType }[] = [
+  { id: "alpha", label: "A-Z", icon: ArrowDownAZ },
+  { id: "duration", label: "DURAÇÃO", icon: Timer },
+  { id: "addedAt", label: "RECÉM ADICIONADO", icon: CalendarPlus },
+];
+
 const LibraryPanel = ({
   filtered,
   search,
