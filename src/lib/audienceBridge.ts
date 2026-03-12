@@ -27,8 +27,8 @@ export interface AudienceStateSnapshot {
   updatedAt: number;
 }
 
-const CHANNEL_NAME = "ruido-rosa-audience";
-const SNAPSHOT_KEY = "ruido-rosa-audience-state";
+const CHANNEL_NAME = "starsing-audience";
+const SNAPSHOT_KEY = "starsing-audience-state";
 
 // Each window gets its own channel instance — BroadcastChannel sends to OTHER contexts
 let hostChannel: BroadcastChannel | null = null;
