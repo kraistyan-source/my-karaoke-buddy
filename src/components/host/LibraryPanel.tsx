@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
-import { Search, Upload, Music, Trash2, Plus, Star, Heart, Clock, TrendingUp, FolderOpen, Copy, Eraser, AlertTriangle, RefreshCw, FolderSync, X } from "lucide-react";
-import { LibrarySong, LibraryFilter } from "@/stores/useLibrary";
+import { Search, Upload, Music, Trash2, Plus, Star, Heart, Clock, TrendingUp, FolderOpen, Copy, Eraser, AlertTriangle, RefreshCw, FolderSync, X, ArrowDownAZ, Timer, CalendarPlus } from "lucide-react";
+import { LibrarySong, LibraryFilter, LibrarySort } from "@/stores/useLibrary";
 import { isElectron } from "@/lib/electronBridge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -29,6 +29,8 @@ interface LibraryPanelProps {
   setLanguageFilter: (v: string | null) => void;
   activeFilter: LibraryFilter;
   setActiveFilter: (v: LibraryFilter) => void;
+  sortBy: LibrarySort;
+  setSortBy: (v: LibrarySort) => void;
   onAddFiles: (files: FileList) => void;
   onRemove: (id: string) => void;
   onAddToQueue: (song: LibrarySong) => void;
@@ -51,6 +53,12 @@ const FILTERS: { id: LibraryFilter; label: string; icon: React.ElementType }[] =
   { id: "mostPlayed", label: "TOP", icon: TrendingUp },
 ];
 
+const SORTS: { id: LibrarySort; label: string; icon: React.ElementType }[] = [
+  { id: "alpha", label: "A-Z", icon: ArrowDownAZ },
+  { id: "duration", label: "DURAÇÃO", icon: Timer },
+  { id: "addedAt", label: "RECÉM ADICIONADO", icon: CalendarPlus },
+];
+
 const LibraryPanel = ({
   filtered,
   search,
@@ -64,6 +72,8 @@ const LibraryPanel = ({
   setLanguageFilter,
   activeFilter,
   setActiveFilter,
+  sortBy,
+  setSortBy,
   onAddFiles,
   onRemove,
   onAddToQueue,
@@ -126,7 +136,26 @@ const LibraryPanel = ({
           ))}
         </div>
 
-        {/* Genre / Language filters */}
+        {/* Sort */}
+        <div className="flex gap-1 items-center">
+          <span className="text-[9px] text-muted-foreground font-mono mr-1">ORDENAR:</span>
+          {SORTS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setSortBy(s.id)}
+              className={cn(
+                "flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono transition-all",
+                sortBy === s.id
+                  ? "bg-secondary/20 text-secondary border border-secondary/50"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+            >
+              <s.icon className="h-3 w-3" />
+              {s.label}
+            </button>
+          ))}
+        </div>
+
         <button
           onClick={() => setShowFilters(!showFilters)}
           className="text-[10px] text-muted-foreground font-mono hover:text-foreground transition-colors"
@@ -440,10 +469,9 @@ const VirtualSongList = ({
                   "text-[9px] px-1 py-0.5 rounded font-mono uppercase",
                   song.fileType === "mp4" && "bg-primary/15 text-primary",
                   song.fileType === "mp3" && "bg-secondary/15 text-secondary",
-                  song.fileType === "mkv" && "bg-accent/15 text-accent",
-                  song.fileType === "builtin" && "bg-muted text-muted-foreground"
+                  song.fileType === "mkv" && "bg-accent/15 text-accent"
                 )}>
-                  {song.fileType === "builtin" ? "DEMO" : song.fileType}
+                  {song.fileType}
                 </span>
               </div>
               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
@@ -454,15 +482,13 @@ const VirtualSongList = ({
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>
-                {song.fileType !== "builtin" && (
-                  <button
-                    onClick={() => onRemove(song.id)}
-                    className="p-1 rounded hover:bg-destructive/20 text-destructive"
-                    title="Remover"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
+                <button
+                  onClick={() => onRemove(song.id)}
+                  className="p-1 rounded hover:bg-destructive/20 text-destructive"
+                  title="Remover"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           );

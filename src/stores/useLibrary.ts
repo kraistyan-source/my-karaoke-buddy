@@ -6,7 +6,7 @@ import {
   addSongsBatch,
   removeSong as dbRemoveSong,
   toggleFavorite as dbToggleFavorite,
-  seedDemoSongs,
+  clearDemoSongs,
 } from "@/lib/db";
 import {
   isElectron,
@@ -22,6 +22,7 @@ import { toast } from "sonner";
 export type LibrarySong = DBSong & { fileUrl?: string };
 
 export type LibraryFilter = "all" | "favorites" | "recent" | "mostPlayed";
+export type LibrarySort = "alpha" | "duration" | "addedAt";
 
 // Parse artist/title from filename like "Artist - Title.mp4"
 function parseFileName(name: string): { artist: string; title: string } {
@@ -60,6 +61,7 @@ export function useLibrary() {
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<LibraryFilter>("all");
+  const [sortBy, setSortBy] = useState<LibrarySort>("alpha");
   const [loading, setLoading] = useState(true);
   const [watchedFolder, setWatchedFolderState] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
@@ -110,7 +112,7 @@ export function useLibrary() {
   // Load songs from IndexedDB + auto-scan watched folder
   useEffect(() => {
     (async () => {
-      await seedDemoSongs();
+      await clearDemoSongs();
       const all = await getAllSongs();
       const withUrls = all.map((s) => ({
         ...s,
@@ -195,7 +197,25 @@ export function useLibrary() {
         result = [...result].filter((s) => s.playCount > 0).sort((a, b) => b.playCount - a.playCount);
         break;
       default:
-        result = [...result].sort((a, b) => a.titleLower.localeCompare(b.titleLower));
+        // Apply sort
+        result = [...result];
+        switch (sortBy) {
+          case "duration":
+            result.sort((a, b) => {
+              const parseDur = (d: string) => {
+                const parts = d.split(":").map(Number);
+                if (parts.length === 2) return parts[0] * 60 + parts[1];
+                return 0;
+              };
+              return parseDur(a.duration) - parseDur(b.duration);
+            });
+            break;
+          case "addedAt":
+            result.sort((a, b) => b.addedAt - a.addedAt);
+            break;
+          default:
+            result.sort((a, b) => a.titleLower.localeCompare(b.titleLower));
+        }
     }
 
     // Cap displayed results at 500 for performance; user can narrow with search
@@ -204,7 +224,7 @@ export function useLibrary() {
     }
 
     return result;
-  }, [songs, search, genreFilter, languageFilter, activeFilter]);
+  }, [songs, search, genreFilter, languageFilter, activeFilter, sortBy]);
 
   const addFiles = useCallback(async (files: FileList) => {
     const newSongs: LibrarySong[] = [];
@@ -316,6 +336,8 @@ export function useLibrary() {
     setLanguageFilter,
     activeFilter,
     setActiveFilter,
+    sortBy,
+    setSortBy,
     genres,
     languages,
     addFiles,
