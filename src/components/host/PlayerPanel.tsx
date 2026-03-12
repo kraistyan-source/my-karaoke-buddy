@@ -190,7 +190,7 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
       const result = scoring.stopScoring(currentEntry.singerName, currentEntry.song.title);
       if (result) {
         setLastScore(result);
-        sendToAudience({ type: "score" as any, score: result });
+        sendToAudience({ type: "score", score: { singerName: result.singerName, songTitle: result.songTitle, score: result.score, stars: result.stars } });
       }
     }
     audioDevices.stopMic();
