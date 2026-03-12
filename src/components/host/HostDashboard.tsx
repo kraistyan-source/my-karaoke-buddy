@@ -35,7 +35,7 @@ const HostDashboard = () => {
       <header className="flex items-center gap-3 px-4 py-2 border-b border-border bg-card flex-shrink-0">
         <Mic2 className="h-5 w-5 text-primary" />
         <h1 className="font-display text-base text-primary">
-          RUÍDO ROSA
+          STARSING
         </h1>
         <span className="text-[9px] text-muted-foreground font-mono border border-border rounded px-1.5 py-0.5">
           KJ HOST

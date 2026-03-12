@@ -34,7 +34,7 @@ const InstallBanner = () => {
         <p className="text-xs text-muted-foreground font-mono mt-1">
           {installed
             ? "USE O MENU DO NAVEGADOR → ADICIONAR À TELA INICIAL"
-            : "TENHA O RUÍDO ROSA NA SUA TELA INICIAL"}
+            : "TENHA O STARSING NA SUA TELA INICIAL"}
         </p>
       </div>
       <button

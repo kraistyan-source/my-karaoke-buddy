@@ -200,11 +200,10 @@ const AudienceScreen = () => {
           <div className="text-center">
             <Mic2 className="h-32 w-32 mx-auto mb-6 animate-pulse-neon" style={{ color: `hsl(${theme.colors.glow1} / 0.2)` }} />
             <h2
-              className="font-display text-4xl md:text-6xl glitch-text"
+              className="font-display text-4xl md:text-6xl"
               style={{ color: `hsl(${theme.colors.glow1} / 0.4)` }}
-              data-text="RUÍDO ROSA"
             >
-              RUÍDO ROSA
+              STARSING
             </h2>
             <p className="text-lg font-mono mt-4" style={{ color: `hsl(${theme.colors.glow1} / 0.3)` }}>
               AGUARDANDO PRÓXIMO CANTOR...
