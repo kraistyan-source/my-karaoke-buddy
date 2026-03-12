@@ -469,10 +469,9 @@ const VirtualSongList = ({
                   "text-[9px] px-1 py-0.5 rounded font-mono uppercase",
                   song.fileType === "mp4" && "bg-primary/15 text-primary",
                   song.fileType === "mp3" && "bg-secondary/15 text-secondary",
-                  song.fileType === "mkv" && "bg-accent/15 text-accent",
-                  song.fileType === "builtin" && "bg-muted text-muted-foreground"
+                  song.fileType === "mkv" && "bg-accent/15 text-accent"
                 )}>
-                  {song.fileType === "builtin" ? "DEMO" : song.fileType}
+                  {song.fileType}
                 </span>
               </div>
               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
