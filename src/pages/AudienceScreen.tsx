@@ -213,6 +213,41 @@ const AudienceScreen = () => {
         )}
       </div>
 
+      {/* Live Score HUD */}
+      {liveScore && liveScore.isScoring && !scoreDisplay && (
+        <div
+          className="absolute top-6 right-6 z-40 flex items-center gap-3 px-5 py-3 rounded-lg"
+          style={{
+            background: `hsl(${theme.colors.glow2} / 0.15)`,
+            border: `1px solid hsl(${theme.colors.glow2} / 0.4)`,
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse" />
+            <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">AO VIVO</span>
+          </div>
+          <span
+            className="font-display text-3xl font-bold tabular-nums"
+            style={{
+              color: `hsl(${theme.colors.glow1})`,
+              textShadow: `0 0 12px hsl(${theme.colors.glow1} / 0.5)`,
+            }}
+          >
+            {liveScore.score}
+          </span>
+          <div className="flex gap-0.5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star
+                key={i}
+                className={cn("h-4 w-4", i < (liveScore.score >= 90 ? 5 : liveScore.score >= 75 ? 4 : liveScore.score >= 55 ? 3 : liveScore.score >= 35 ? 2 : 1) ? "fill-current" : "opacity-20")}
+                style={{ color: `hsl(${theme.colors.glow2})` }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Score Overlay */}
       {scoreDisplay && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 animate-in fade-in duration-500">
