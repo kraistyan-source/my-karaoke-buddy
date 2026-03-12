@@ -336,6 +336,8 @@ export function useLibrary() {
     setLanguageFilter,
     activeFilter,
     setActiveFilter,
+    sortBy,
+    setSortBy,
     genres,
     languages,
     addFiles,
