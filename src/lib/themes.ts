@@ -50,13 +50,13 @@ export const themes: Record<ThemeId, VisualTheme> = {
   stage: {
     id: "stage",
     label: "PALCO",
-    description: "Luzes de palco dramáticas com spots coloridos",
+    description: "Luzes de palco douradas com spots",
     colors: {
-      glow1: "45 100% 55%",
-      glow2: "220 100% 60%",
+      glow1: "50 100% 55%",
+      glow2: "30 100% 50%",
       overlay: "hsl(0 0% 0% / 0.7)",
       text: "hsl(45 100% 90%)",
-      accent: "hsl(45 100% 55%)",
+      accent: "hsl(50 100% 55%)",
       particle: "hsl(45 90% 70%)",
     },
     effects: {
