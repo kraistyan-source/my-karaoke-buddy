@@ -13,6 +13,7 @@ export interface DBSong {
   artist: string;
   artistLower: string; // indexed for fast search
   duration: string;
+  durationSec: number; // seconds, 0 = unknown
   genre: string;
   language: string;
   fileType: "mp4" | "mp3" | "mkv" | "builtin";
