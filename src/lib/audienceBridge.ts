@@ -6,7 +6,7 @@ import { QueueEntry } from "@/stores/useQueue";
 import { ThemeId } from "@/lib/themes";
 
 export interface AudienceMessage {
-  type: "state" | "play" | "pause" | "skip" | "time" | "ended" | "request-state" | "theme" | "score";
+  type: "state" | "play" | "pause" | "skip" | "time" | "ended" | "request-state" | "theme" | "score" | "live-score";
   currentEntry?: QueueEntry | null;
   nextSingerName?: string;
   currentTime?: number;
@@ -14,6 +14,7 @@ export interface AudienceMessage {
   isPlaying?: boolean;
   themeId?: ThemeId;
   score?: { singerName: string; songTitle: string; score: number; stars: number };
+  liveScore?: { score: number; isScoring: boolean };
 }
 
 export interface AudienceStateSnapshot {
