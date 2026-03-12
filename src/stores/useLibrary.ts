@@ -112,7 +112,7 @@ export function useLibrary() {
   // Load songs from IndexedDB + auto-scan watched folder
   useEffect(() => {
     (async () => {
-      await seedDemoSongs();
+      await clearDemoSongs();
       const all = await getAllSongs();
       const withUrls = all.map((s) => ({
         ...s,
