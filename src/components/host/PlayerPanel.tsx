@@ -147,6 +147,10 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     setDuration(formatTime(media.duration));
     if (Math.floor(media.currentTime * 10) % 20 === 0) {
       sendToAudience({ type: "time", currentTime: media.currentTime, duration: media.duration });
+      // Send live score to audience
+      if (scoring.isScoring) {
+        sendToAudience({ type: "live-score", liveScore: { score: scoring.currentScore, isScoring: true } });
+      }
     }
   };
 
