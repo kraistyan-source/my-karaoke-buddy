@@ -6,7 +6,7 @@ import {
   addSongsBatch,
   removeSong as dbRemoveSong,
   toggleFavorite as dbToggleFavorite,
-  seedDemoSongs,
+  clearDemoSongs,
 } from "@/lib/db";
 import {
   isElectron,

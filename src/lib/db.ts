@@ -221,28 +221,18 @@ export async function getSingerHistory(limit = 100): Promise<DBSingerHistory[]> 
   });
 }
 
-// ─── Seed Demo Songs ───
+// ─── Clear Demo Songs ───
 
-const DEMO_SONGS: Omit<DBSong, "titleLower" | "artistLower" | "addedAt">[] = [
-  { id: "demo-1", title: "Evidências", artist: "Chitãozinho & Xororó", duration: "4:32", genre: "Sertanejo", language: "PT", fileType: "builtin", isFavorite: false, playCount: 0 },
-  { id: "demo-2", title: "Bohemian Rhapsody", artist: "Queen", duration: "5:55", genre: "Rock", language: "EN", fileType: "builtin", isFavorite: false, playCount: 0 },
-  { id: "demo-3", title: "Garota de Ipanema", artist: "Tom Jobim & Vinícius", duration: "3:45", genre: "Bossa Nova", language: "PT", fileType: "builtin", isFavorite: false, playCount: 0 },
-  { id: "demo-4", title: "Don't Stop Me Now", artist: "Queen", duration: "3:29", genre: "Rock", language: "EN", fileType: "builtin", isFavorite: false, playCount: 0 },
-  { id: "demo-5", title: "Ai Se Eu Te Pego", artist: "Michel Teló", duration: "2:53", genre: "Sertanejo", language: "PT", fileType: "builtin", isFavorite: false, playCount: 0 },
-  { id: "demo-6", title: "Sweet Child O' Mine", artist: "Guns N' Roses", duration: "5:56", genre: "Rock", language: "EN", fileType: "builtin", isFavorite: false, playCount: 0 },
-  { id: "demo-7", title: "Trem-Bala", artist: "Ana Vilela", duration: "4:20", genre: "Pop", language: "PT", fileType: "builtin", isFavorite: false, playCount: 0 },
-  { id: "demo-8", title: "Livin' on a Prayer", artist: "Bon Jovi", duration: "4:09", genre: "Rock", language: "EN", fileType: "builtin", isFavorite: false, playCount: 0 },
-];
-
-export async function seedDemoSongs(): Promise<void> {
-  const count = await getSongCount();
-  if (count > 0) return; // already seeded
-  const now = Date.now();
-  const songs: DBSong[] = DEMO_SONGS.map((s) => ({
-    ...s,
-    titleLower: s.title.toLowerCase(),
-    artistLower: s.artist.toLowerCase(),
-    addedAt: now,
-  }));
-  await addSongsBatch(songs);
+export async function clearDemoSongs(): Promise<void> {
+  const all = await getAllSongs();
+  const demos = all.filter((s) => s.fileType === "builtin");
+  if (demos.length === 0) return;
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("songs", "readwrite");
+    const store = tx.objectStore("songs");
+    demos.forEach((s) => store.delete(s.id));
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
 }
