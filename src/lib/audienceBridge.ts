@@ -147,7 +147,7 @@ export function requestStateFromHost() {
 export function openAudienceWindow() {
   const w = window.open(
     "/audience",
-    "ruido-rosa-audience",
+    "starsing-audience",
     "popup=yes,width=1280,height=720"
   );
   if (w) {

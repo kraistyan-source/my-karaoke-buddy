@@ -71,14 +71,14 @@ export const themes: Record<ThemeId, VisualTheme> = {
   retro: {
     id: "retro",
     label: "RETRÔ",
-    description: "Estilo anos 80 com gradientes quentes e VHS",
+    description: "Estilo vintage dourado com tons quentes",
     colors: {
-      glow1: "340 90% 55%",
-      glow2: "270 80% 60%",
-      overlay: "hsl(280 30% 8% / 0.65)",
-      text: "hsl(340 80% 90%)",
-      accent: "hsl(340 90% 55%)",
-      particle: "hsl(270 80% 70%)",
+      glow1: "40 90% 50%",
+      glow2: "25 80% 55%",
+      overlay: "hsl(30 20% 6% / 0.65)",
+      text: "hsl(40 80% 90%)",
+      accent: "hsl(40 90% 50%)",
+      particle: "hsl(25 80% 60%)",
     },
     effects: {
       scanlines: true,

@@ -3,7 +3,7 @@
  * Handles 50k+ songs with instant search via indexed fields.
  */
 
-const DB_NAME = "ruido-rosa-db";
+const DB_NAME = "starsing-db";
 const DB_VERSION = 3;
 
 export interface DBSong {

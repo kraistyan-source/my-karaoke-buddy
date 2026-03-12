@@ -19,7 +19,7 @@ export const useTheme = create<ThemeStore>((set) => ({
   themeId: stored,
   theme: themes[stored],
   setTheme: (id) => {
-    localStorage.setItem("ruido-rosa-theme", id);
+    localStorage.setItem("starsing-theme", id);
     set({ themeId: id, theme: themes[id] });
   },
 }));
