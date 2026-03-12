@@ -46,6 +46,7 @@ function scannedFileToDB(file: ScannedFile): DBSong {
     artist,
     artistLower: artist.toLowerCase(),
     duration: "--:--",
+    durationSec: 0,
     genre: "Importado",
     language: "",
     fileType: (["mp4", "mp3", "mkv"].includes(file.ext) ? file.ext : "mp4") as DBSong["fileType"],
