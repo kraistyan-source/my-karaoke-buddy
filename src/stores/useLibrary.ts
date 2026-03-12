@@ -22,6 +22,7 @@ import { toast } from "sonner";
 export type LibrarySong = DBSong & { fileUrl?: string };
 
 export type LibraryFilter = "all" | "favorites" | "recent" | "mostPlayed";
+export type LibrarySort = "alpha" | "duration" | "addedAt";
 
 // Parse artist/title from filename like "Artist - Title.mp4"
 function parseFileName(name: string): { artist: string; title: string } {
