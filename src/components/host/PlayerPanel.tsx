@@ -281,7 +281,7 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
                   <p className="text-lg text-muted-foreground font-mono">{currentEntry.song.artist}</p>
                   <div className="mt-8 py-3 px-6 rounded bg-secondary/10 border border-secondary/30 inline-block">
                     <p className={cn(
-                      "font-display text-secondary neon-text-secondary",
+                      "font-display text-secondary",
                       eventMode ? "text-2xl" : "text-xl"
                     )}>
                       🎤 {currentEntry.singerName}
