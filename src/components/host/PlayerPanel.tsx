@@ -233,16 +233,19 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     <div ref={containerRef} className="flex flex-col h-full bg-background">
       {/* Video / Visual Area */}
       <div className="flex-1 relative flex items-center justify-center bg-card overflow-hidden">
-        {/* Theme overlays */}
+        {/* Simplified overlay - singer info + progress only */}
         {currentEntry && (
-          <ThemeOverlay
-            theme={theme}
-            singerName={currentEntry.singerName}
-            songTitle={currentEntry.song.title}
-            artist={currentEntry.song.artist}
-            progress={progress}
-            showSingerInfo={!isVideo}
-          />
+          <>
+            {!isVideo && (
+              <SingerOverlay
+                singerName={currentEntry.singerName}
+                songTitle={currentEntry.song.title}
+                artist={currentEntry.song.artist}
+                theme={theme}
+              />
+            )}
+            <ProgressOverlay progress={progress} color={theme.colors.glow1} />
+          </>
         )}
         
         {currentEntry ? (
