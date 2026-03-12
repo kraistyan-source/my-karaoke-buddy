@@ -302,7 +302,7 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
       {/* Progress bar */}
       <div className="h-2 bg-muted cursor-pointer" onClick={handleSeek}>
         <div
-          className="h-full bg-primary neon-box-primary transition-all duration-100"
+          className="h-full bg-primary transition-all duration-100"
           style={{ width: `${progress}%` }}
         />
       </div>
