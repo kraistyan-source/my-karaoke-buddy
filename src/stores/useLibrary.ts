@@ -204,14 +204,7 @@ export function useLibrary() {
         result = [...result];
         switch (sortBy) {
           case "duration":
-            result.sort((a, b) => {
-              const parseDur = (d: string) => {
-                const parts = d.split(":").map(Number);
-                if (parts.length === 2) return parts[0] * 60 + parts[1];
-                return 0;
-              };
-              return parseDur(a.duration) - parseDur(b.duration);
-            });
+            result.sort((a, b) => (a.durationSec || 0) - (b.durationSec || 0));
             break;
           case "addedAt":
             result.sort((a, b) => b.addedAt - a.addedAt);
