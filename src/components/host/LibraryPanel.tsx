@@ -29,6 +29,8 @@ interface LibraryPanelProps {
   setLanguageFilter: (v: string | null) => void;
   activeFilter: LibraryFilter;
   setActiveFilter: (v: LibraryFilter) => void;
+  sortBy: LibrarySort;
+  setSortBy: (v: LibrarySort) => void;
   onAddFiles: (files: FileList) => void;
   onRemove: (id: string) => void;
   onAddToQueue: (song: LibrarySong) => void;
