@@ -136,7 +136,26 @@ const LibraryPanel = ({
           ))}
         </div>
 
-        {/* Genre / Language filters */}
+        {/* Sort */}
+        <div className="flex gap-1 items-center">
+          <span className="text-[9px] text-muted-foreground font-mono mr-1">ORDENAR:</span>
+          {SORTS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setSortBy(s.id)}
+              className={cn(
+                "flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono transition-all",
+                sortBy === s.id
+                  ? "bg-secondary/20 text-secondary border border-secondary/50"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+            >
+              <s.icon className="h-3 w-3" />
+              {s.label}
+            </button>
+          ))}
+        </div>
+
         <button
           onClick={() => setShowFilters(!showFilters)}
           className="text-[10px] text-muted-foreground font-mono hover:text-foreground transition-colors"
