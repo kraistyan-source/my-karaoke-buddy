@@ -271,9 +271,9 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
                   />
                 )}
                 <div className="relative z-20 text-center px-8">
-                  <Mic2 className="h-16 w-16 text-primary mx-auto mb-6 animate-pulse-neon" />
+                  <Mic2 className="h-16 w-16 text-primary mx-auto mb-6" />
                   <h2 className={cn(
-                    "font-display text-primary neon-text-primary animate-flicker mb-2",
+                    "font-display text-primary mb-2",
                     eventMode ? "text-3xl md:text-5xl" : "text-2xl md:text-4xl"
                   )}>
                     {currentEntry.song.title}
