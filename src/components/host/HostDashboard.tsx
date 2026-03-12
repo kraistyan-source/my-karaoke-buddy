@@ -164,6 +164,8 @@ const HostDashboard = () => {
                 setLanguageFilter={library.setLanguageFilter}
                 activeFilter={library.activeFilter}
                 setActiveFilter={library.setActiveFilter}
+                sortBy={library.sortBy}
+                setSortBy={library.setSortBy}
                 onAddFiles={library.addFiles}
                 onRemove={library.removeSong}
                 onAddToQueue={handleAddToQueue}
