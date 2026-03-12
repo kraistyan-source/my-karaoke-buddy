@@ -247,6 +247,7 @@ export function useLibrary() {
         artist,
         artistLower: artist.toLowerCase(),
         duration: "--:--",
+        durationSec: 0,
         genre: "Importado",
         language: "",
         fileType: ext as "mp4" | "mp3" | "mkv",
