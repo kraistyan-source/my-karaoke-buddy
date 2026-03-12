@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = "ruido-rosa-db";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export interface DBSong {
   id: string;
