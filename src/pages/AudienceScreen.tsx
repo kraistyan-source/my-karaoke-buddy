@@ -117,7 +117,7 @@ const AudienceScreen = () => {
   const hasMedia = currentEntry?.song.fileUrl != null;
 
   return (
-    <div className="h-screen w-screen bg-background flex flex-col overflow-hidden cursor-none">
+    <div className="h-screen w-screen bg-background flex flex-col overflow-hidden cursor-none relative">
       <div className="flex-1 relative flex items-center justify-center overflow-hidden">
         {/* Theme overlays */}
         <ThemeOverlay
