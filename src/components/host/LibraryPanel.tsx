@@ -72,6 +72,8 @@ const LibraryPanel = ({
   setLanguageFilter,
   activeFilter,
   setActiveFilter,
+  sortBy,
+  setSortBy,
   onAddFiles,
   onRemove,
   onAddToQueue,
