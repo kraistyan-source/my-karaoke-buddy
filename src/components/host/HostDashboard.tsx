@@ -33,11 +33,8 @@ const HostDashboard = () => {
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Top Bar */}
       <header className="flex items-center gap-3 px-4 py-2 border-b border-border bg-card flex-shrink-0">
-        <Mic2 className="h-5 w-5 text-primary animate-pulse-neon" />
-        <h1
-          className="font-display text-base text-primary neon-text-primary animate-flicker glitch-text"
-          data-text="RUÍDO ROSA"
-        >
+        <Mic2 className="h-5 w-5 text-primary" />
+        <h1 className="font-display text-base text-primary">
           RUÍDO ROSA
         </h1>
         <span className="text-[9px] text-muted-foreground font-mono border border-border rounded px-1.5 py-0.5">

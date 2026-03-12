@@ -198,6 +198,11 @@ export function useLibrary() {
         result = [...result].sort((a, b) => a.titleLower.localeCompare(b.titleLower));
     }
 
+    // Cap displayed results at 500 for performance; user can narrow with search
+    if (result.length > 500 && !search) {
+      result = result.slice(0, 500);
+    }
+
     return result;
   }, [songs, search, genreFilter, languageFilter, activeFilter]);
 

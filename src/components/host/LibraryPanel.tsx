@@ -336,7 +336,7 @@ const LibraryPanel = ({
       {/* Results count */}
       <div className="px-3 py-1.5 border-b border-border bg-muted/30">
         <span className="text-[10px] text-muted-foreground font-mono">
-          {filtered.length.toLocaleString()} RESULTADOS
+          {filtered.length.toLocaleString()} RESULTADOS{!search && total > 500 && filtered.length >= 500 ? " (BUSQUE PARA VER MAIS)" : ""}
         </span>
       </div>
 

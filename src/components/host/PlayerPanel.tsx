@@ -399,7 +399,7 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
           onClick={handleOpenAudience}
           className={cn(
             "p-2 transition-colors",
-            audienceOpen ? "text-secondary neon-text-secondary" : "text-muted-foreground hover:text-secondary"
+            audienceOpen ? "text-secondary" : "text-muted-foreground hover:text-secondary"
           )}
           title="Tela do público (TV)"
         >
