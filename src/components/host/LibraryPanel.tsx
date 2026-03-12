@@ -340,78 +340,14 @@ const LibraryPanel = ({
         </span>
       </div>
 
-      {/* Song list */}
-      <div className="flex-1 overflow-y-auto">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="font-mono text-sm text-muted-foreground animate-pulse">CARREGANDO...</p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-            <Music className="h-12 w-12 mb-3 opacity-30" />
-            <p className="font-mono text-sm">NENHUMA MÚSICA ENCONTRADA</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {filtered.map((song) => (
-              <div
-                key={song.id}
-                className="group flex items-center gap-2 px-3 py-2 hover:bg-muted/50 transition-colors"
-              >
-                {/* Favorite star */}
-                <button
-                  onClick={() => onToggleFavorite(song.id)}
-                  className={cn(
-                    "flex-shrink-0 p-0.5 transition-colors",
-                    song.isFavorite ? "text-star" : "text-muted-foreground/30 hover:text-star/60"
-                  )}
-                >
-                  <Star className={cn("h-3.5 w-3.5", song.isFavorite && "fill-current")} />
-                </button>
-
-                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onAddToQueue(song)}>
-                  <p className="text-sm text-foreground truncate font-mono leading-tight">{song.title}</p>
-                  <p className="text-[11px] text-muted-foreground truncate">{song.artist}</p>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  {song.playCount > 0 && (
-                    <span className="text-[9px] text-muted-foreground/60 font-mono">{song.playCount}×</span>
-                  )}
-                  <span className={cn(
-                    "text-[9px] px-1 py-0.5 rounded font-mono uppercase",
-                    song.fileType === "mp4" && "bg-primary/15 text-primary",
-                    song.fileType === "mp3" && "bg-secondary/15 text-secondary",
-                    song.fileType === "mkv" && "bg-accent/15 text-accent",
-                    song.fileType === "builtin" && "bg-muted text-muted-foreground"
-                  )}>
-                    {song.fileType === "builtin" ? "DEMO" : song.fileType}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => onAddToQueue(song)}
-                    className="p-1 rounded hover:bg-secondary/20 text-secondary transition-colors"
-                    title="Adicionar à fila"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </button>
-                  {song.fileType !== "builtin" && (
-                    <button
-                      onClick={() => onRemove(song.id)}
-                      className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"
-                      title="Remover"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Song list - virtualized */}
+      <VirtualSongList
+        filtered={filtered}
+        loading={loading}
+        onToggleFavorite={onToggleFavorite}
+        onAddToQueue={onAddToQueue}
+        onRemove={onRemove}
+      />
     </div>
   );
 };
