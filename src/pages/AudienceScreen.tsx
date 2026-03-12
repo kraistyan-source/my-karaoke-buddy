@@ -19,6 +19,7 @@ const AudienceScreen = () => {
   const [themeId, setThemeId] = useState<ThemeId>("neon");
   const [progress, setProgress] = useState(0);
   const [scoreDisplay, setScoreDisplay] = useState<{ singerName: string; score: number; stars: number } | null>(null);
+  const [liveScore, setLiveScore] = useState<{ score: number; isScoring: boolean } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const pendingSeekRef = useRef<number | null>(null);
 
