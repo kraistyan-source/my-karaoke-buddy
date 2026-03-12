@@ -83,11 +83,18 @@ const AudienceScreen = () => {
         case "ended":
           setIsPlaying(false);
           setProgress(0);
+          setLiveScore(null);
           break;
         case "score":
           if (msg.score) {
+            setLiveScore(null);
             setScoreDisplay(msg.score);
             setTimeout(() => setScoreDisplay(null), 8000);
+          }
+          break;
+        case "live-score":
+          if (msg.liveScore) {
+            setLiveScore(msg.liveScore);
           }
           break;
       }
