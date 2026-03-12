@@ -197,7 +197,25 @@ export function useLibrary() {
         result = [...result].filter((s) => s.playCount > 0).sort((a, b) => b.playCount - a.playCount);
         break;
       default:
-        result = [...result].sort((a, b) => a.titleLower.localeCompare(b.titleLower));
+        // Apply sort
+        result = [...result];
+        switch (sortBy) {
+          case "duration":
+            result.sort((a, b) => {
+              const parseDur = (d: string) => {
+                const parts = d.split(":").map(Number);
+                if (parts.length === 2) return parts[0] * 60 + parts[1];
+                return 0;
+              };
+              return parseDur(a.duration) - parseDur(b.duration);
+            });
+            break;
+          case "addedAt":
+            result.sort((a, b) => b.addedAt - a.addedAt);
+            break;
+          default:
+            result.sort((a, b) => a.titleLower.localeCompare(b.titleLower));
+        }
     }
 
     // Cap displayed results at 500 for performance; user can narrow with search
@@ -206,7 +224,7 @@ export function useLibrary() {
     }
 
     return result;
-  }, [songs, search, genreFilter, languageFilter, activeFilter]);
+  }, [songs, search, genreFilter, languageFilter, activeFilter, sortBy]);
 
   const addFiles = useCallback(async (files: FileList) => {
     const newSongs: LibrarySong[] = [];
