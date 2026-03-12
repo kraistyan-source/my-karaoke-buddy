@@ -328,8 +328,8 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
             btnSize,
             currentEntry
               ? isPlaying
-                ? "border-primary bg-primary/10 neon-box-primary hover:bg-primary/20"
-                : "border-secondary bg-secondary/10 neon-box-secondary hover:bg-secondary/20"
+                ? "border-primary bg-primary/10 hover:bg-primary/20"
+                : "border-secondary bg-secondary/10 hover:bg-secondary/20"
               : "border-border bg-muted cursor-not-allowed"
           )}
         >
