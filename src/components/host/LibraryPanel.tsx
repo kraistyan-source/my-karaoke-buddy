@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { Search, Upload, Music, Trash2, Plus, Star, Heart, Clock, TrendingUp, FolderOpen, Copy, Eraser, AlertTriangle, RefreshCw, FolderSync, X } from "lucide-react";
 import { LibrarySong, LibraryFilter } from "@/stores/useLibrary";
 import { isElectron } from "@/lib/electronBridge";
@@ -336,81 +336,137 @@ const LibraryPanel = ({
       {/* Results count */}
       <div className="px-3 py-1.5 border-b border-border bg-muted/30">
         <span className="text-[10px] text-muted-foreground font-mono">
-          {filtered.length.toLocaleString()} RESULTADOS
+          {filtered.length.toLocaleString()} RESULTADOS{!search && total > 500 && filtered.length >= 500 ? " (BUSQUE PARA VER MAIS)" : ""}
         </span>
       </div>
 
-      {/* Song list */}
-      <div className="flex-1 overflow-y-auto">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="font-mono text-sm text-muted-foreground animate-pulse">CARREGANDO...</p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-            <Music className="h-12 w-12 mb-3 opacity-30" />
-            <p className="font-mono text-sm">NENHUMA MÚSICA ENCONTRADA</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {filtered.map((song) => (
-              <div
-                key={song.id}
-                className="group flex items-center gap-2 px-3 py-2 hover:bg-muted/50 transition-colors"
+      {/* Song list - virtualized */}
+      <VirtualSongList
+        filtered={filtered}
+        loading={loading}
+        onToggleFavorite={onToggleFavorite}
+        onAddToQueue={onAddToQueue}
+        onRemove={onRemove}
+      />
+    </div>
+  );
+};
+
+// Virtualized song list - only renders visible items
+const ITEM_HEIGHT = 44;
+const OVERSCAN = 10;
+
+const VirtualSongList = ({
+  filtered,
+  loading,
+  onToggleFavorite,
+  onAddToQueue,
+  onRemove,
+}: {
+  filtered: LibrarySong[];
+  loading: boolean;
+  onToggleFavorite: (id: string) => void;
+  onAddToQueue: (song: LibrarySong) => void;
+  onRemove: (id: string) => void;
+}) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(600);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      setContainerHeight(entries[0].contentRect.height);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (scrollRef.current) setScrollTop(scrollRef.current.scrollTop);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="font-mono text-sm text-muted-foreground">CARREGANDO...</p>
+      </div>
+    );
+  }
+
+  if (filtered.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+        <Music className="h-12 w-12 mb-3 opacity-30" />
+        <p className="font-mono text-sm">NENHUMA MÚSICA ENCONTRADA</p>
+      </div>
+    );
+  }
+
+  const totalHeight = filtered.length * ITEM_HEIGHT;
+  const startIdx = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - OVERSCAN);
+  const endIdx = Math.min(filtered.length, Math.ceil((scrollTop + containerHeight) / ITEM_HEIGHT) + OVERSCAN);
+
+  return (
+    <div ref={scrollRef} className="flex-1 overflow-y-auto" onScroll={handleScroll}>
+      <div style={{ height: totalHeight, position: "relative" }}>
+        {filtered.slice(startIdx, endIdx).map((song, i) => {
+          const idx = startIdx + i;
+          return (
+            <div
+              key={song.id}
+              className="group flex items-center gap-2 px-3 hover:bg-muted/50 absolute left-0 right-0"
+              style={{ top: idx * ITEM_HEIGHT, height: ITEM_HEIGHT }}
+            >
+              <button
+                onClick={() => onToggleFavorite(song.id)}
+                className={cn(
+                  "flex-shrink-0 p-0.5",
+                  song.isFavorite ? "text-star" : "text-muted-foreground/30 hover:text-star/60"
+                )}
               >
-                {/* Favorite star */}
-                <button
-                  onClick={() => onToggleFavorite(song.id)}
-                  className={cn(
-                    "flex-shrink-0 p-0.5 transition-colors",
-                    song.isFavorite ? "text-star" : "text-muted-foreground/30 hover:text-star/60"
-                  )}
-                >
-                  <Star className={cn("h-3.5 w-3.5", song.isFavorite && "fill-current")} />
-                </button>
-
-                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onAddToQueue(song)}>
-                  <p className="text-sm text-foreground truncate font-mono leading-tight">{song.title}</p>
-                  <p className="text-[11px] text-muted-foreground truncate">{song.artist}</p>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  {song.playCount > 0 && (
-                    <span className="text-[9px] text-muted-foreground/60 font-mono">{song.playCount}×</span>
-                  )}
-                  <span className={cn(
-                    "text-[9px] px-1 py-0.5 rounded font-mono uppercase",
-                    song.fileType === "mp4" && "bg-primary/15 text-primary",
-                    song.fileType === "mp3" && "bg-secondary/15 text-secondary",
-                    song.fileType === "mkv" && "bg-accent/15 text-accent",
-                    song.fileType === "builtin" && "bg-muted text-muted-foreground"
-                  )}>
-                    {song.fileType === "builtin" ? "DEMO" : song.fileType}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => onAddToQueue(song)}
-                    className="p-1 rounded hover:bg-secondary/20 text-secondary transition-colors"
-                    title="Adicionar à fila"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </button>
-                  {song.fileType !== "builtin" && (
-                    <button
-                      onClick={() => onRemove(song.id)}
-                      className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"
-                      title="Remover"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
+                <Star className={cn("h-3.5 w-3.5", song.isFavorite && "fill-current")} />
+              </button>
+              <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onAddToQueue(song)}>
+                <p className="text-sm text-foreground truncate font-mono leading-tight">{song.title}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{song.artist}</p>
               </div>
-            ))}
-          </div>
-        )}
+              <div className="flex items-center gap-1.5">
+                {song.playCount > 0 && (
+                  <span className="text-[9px] text-muted-foreground/60 font-mono">{song.playCount}×</span>
+                )}
+                <span className={cn(
+                  "text-[9px] px-1 py-0.5 rounded font-mono uppercase",
+                  song.fileType === "mp4" && "bg-primary/15 text-primary",
+                  song.fileType === "mp3" && "bg-secondary/15 text-secondary",
+                  song.fileType === "mkv" && "bg-accent/15 text-accent",
+                  song.fileType === "builtin" && "bg-muted text-muted-foreground"
+                )}>
+                  {song.fileType === "builtin" ? "DEMO" : song.fileType}
+                </span>
+              </div>
+              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+                <button
+                  onClick={() => onAddToQueue(song)}
+                  className="p-1 rounded hover:bg-secondary/20 text-secondary"
+                  title="Adicionar à fila"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+                {song.fileType !== "builtin" && (
+                  <button
+                    onClick={() => onRemove(song.id)}
+                    className="p-1 rounded hover:bg-destructive/20 text-destructive"
+                    title="Remover"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

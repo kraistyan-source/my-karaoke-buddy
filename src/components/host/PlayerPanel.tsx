@@ -7,7 +7,8 @@ import { QueueEntry } from "@/stores/useQueue";
 import { sendToAudience, openAudienceWindow, onHostMessage } from "@/lib/audienceBridge";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/stores/useTheme";
-import ThemeOverlay from "@/components/overlays/ThemeOverlay";
+import SingerOverlay from "@/components/overlays/SingerOverlay";
+import ProgressOverlay from "@/components/overlays/ProgressOverlay";
 import AudioDeviceSelector from "./AudioDeviceSelector";
 import ScoreDisplay from "./ScoreDisplay";
 import { useAudioDevices } from "@/stores/useAudioDevices";
@@ -233,16 +234,19 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
     <div ref={containerRef} className="flex flex-col h-full bg-background">
       {/* Video / Visual Area */}
       <div className="flex-1 relative flex items-center justify-center bg-card overflow-hidden">
-        {/* Theme overlays */}
+        {/* Simplified overlay - singer info + progress only */}
         {currentEntry && (
-          <ThemeOverlay
-            theme={theme}
-            singerName={currentEntry.singerName}
-            songTitle={currentEntry.song.title}
-            artist={currentEntry.song.artist}
-            progress={progress}
-            showSingerInfo={!isVideo}
-          />
+          <>
+            {!isVideo && (
+              <SingerOverlay
+                singerName={currentEntry.singerName}
+                songTitle={currentEntry.song.title}
+                artist={currentEntry.song.artist}
+                theme={theme}
+              />
+            )}
+            <ProgressOverlay progress={progress} color={theme.colors.glow1} />
+          </>
         )}
         
         {currentEntry ? (
@@ -267,9 +271,9 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
                   />
                 )}
                 <div className="relative z-20 text-center px-8">
-                  <Mic2 className="h-16 w-16 text-primary mx-auto mb-6 animate-pulse-neon" />
+                  <Mic2 className="h-16 w-16 text-primary mx-auto mb-6" />
                   <h2 className={cn(
-                    "font-display text-primary neon-text-primary animate-flicker mb-2",
+                    "font-display text-primary mb-2",
                     eventMode ? "text-3xl md:text-5xl" : "text-2xl md:text-4xl"
                   )}>
                     {currentEntry.song.title}
@@ -277,7 +281,7 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
                   <p className="text-lg text-muted-foreground font-mono">{currentEntry.song.artist}</p>
                   <div className="mt-8 py-3 px-6 rounded bg-secondary/10 border border-secondary/30 inline-block">
                     <p className={cn(
-                      "font-display text-secondary neon-text-secondary",
+                      "font-display text-secondary",
                       eventMode ? "text-2xl" : "text-xl"
                     )}>
                       🎤 {currentEntry.singerName}
@@ -298,7 +302,7 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
       {/* Progress bar */}
       <div className="h-2 bg-muted cursor-pointer" onClick={handleSeek}>
         <div
-          className="h-full bg-primary neon-box-primary transition-all duration-100"
+          className="h-full bg-primary transition-all duration-100"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -324,8 +328,8 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
             btnSize,
             currentEntry
               ? isPlaying
-                ? "border-primary bg-primary/10 neon-box-primary hover:bg-primary/20"
-                : "border-secondary bg-secondary/10 neon-box-secondary hover:bg-secondary/20"
+                ? "border-primary bg-primary/10 hover:bg-primary/20"
+                : "border-secondary bg-secondary/10 hover:bg-secondary/20"
               : "border-border bg-muted cursor-not-allowed"
           )}
         >
@@ -395,7 +399,7 @@ const PlayerPanel = ({ currentEntry, nextSingerName, onSkip, eventMode = false }
           onClick={handleOpenAudience}
           className={cn(
             "p-2 transition-colors",
-            audienceOpen ? "text-secondary neon-text-secondary" : "text-muted-foreground hover:text-secondary"
+            audienceOpen ? "text-secondary" : "text-muted-foreground hover:text-secondary"
           )}
           title="Tela do público (TV)"
         >
