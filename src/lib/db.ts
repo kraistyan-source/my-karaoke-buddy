@@ -50,6 +50,7 @@ function openDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
+      const oldVersion = event.oldVersion;
 
       if (!db.objectStoreNames.contains("songs")) {
         const songStore = db.createObjectStore("songs", { keyPath: "id" });
@@ -61,6 +62,12 @@ function openDB(): Promise<IDBDatabase> {
         songStore.createIndex("playCount", "playCount", { unique: false });
         songStore.createIndex("lastPlayed", "lastPlayed", { unique: false });
         songStore.createIndex("addedAt", "addedAt", { unique: false });
+        songStore.createIndex("durationSec", "durationSec", { unique: false });
+      } else if (oldVersion < 3) {
+        const songStore = (event.target as IDBOpenDBRequest).transaction!.objectStore("songs");
+        if (!songStore.indexNames.contains("durationSec")) {
+          songStore.createIndex("durationSec", "durationSec", { unique: false });
+        }
       }
 
       if (!db.objectStoreNames.contains("singerHistory")) {
