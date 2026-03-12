@@ -482,15 +482,13 @@ const VirtualSongList = ({
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>
-                {song.fileType !== "builtin" && (
-                  <button
-                    onClick={() => onRemove(song.id)}
-                    className="p-1 rounded hover:bg-destructive/20 text-destructive"
-                    title="Remover"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
+                <button
+                  onClick={() => onRemove(song.id)}
+                  className="p-1 rounded hover:bg-destructive/20 text-destructive"
+                  title="Remover"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           );
