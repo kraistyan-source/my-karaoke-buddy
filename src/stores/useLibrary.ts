@@ -6,6 +6,7 @@ import {
   addSongsBatch,
   removeSong as dbRemoveSong,
   toggleFavorite as dbToggleFavorite,
+  updateSong,
   clearDemoSongs,
 } from "@/lib/db";
 import {
@@ -17,6 +18,7 @@ import {
   localFileUrl,
   ScannedFile,
 } from "@/lib/electronBridge";
+import { probeDuration, formatDuration } from "@/lib/mediaDuration";
 import { toast } from "sonner";
 
 export type LibrarySong = DBSong & { fileUrl?: string };
