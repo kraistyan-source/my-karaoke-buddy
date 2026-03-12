@@ -112,8 +112,10 @@ export function useLibrary() {
     }
   }, []);
 
-  // Load songs from IndexedDB + auto-scan watched folder
+  // Load songs from IndexedDB + auto-scan watched folder + probe durations
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       await clearDemoSongs();
       const all = await getAllSongs();
@@ -135,7 +137,39 @@ export function useLibrary() {
           }
         }
       }
+
+      // Background: probe durations for songs that don't have one yet
+      const needProbe = withUrls.filter((s) => (!s.durationSec || s.durationSec === 0) && s.fileUrl);
+      if (needProbe.length > 0) {
+        const BATCH = 5;
+        for (let i = 0; i < needProbe.length; i += BATCH) {
+          if (cancelled) break;
+          const batch = needProbe.slice(i, i + BATCH);
+          const results = await Promise.all(
+            batch.map(async (s) => {
+              const isVideo = s.fileType === "mp4" || s.fileType === "mkv";
+              const dur = await probeDuration(s.fileUrl!, isVideo);
+              return { id: s.id, dur };
+            })
+          );
+          for (const { id, dur } of results) {
+            if (dur > 0) {
+              await updateSong(id, { durationSec: dur, duration: formatDuration(dur) });
+            }
+          }
+          // Update state in batches
+          if (!cancelled) {
+            const updated = await getAllSongs();
+            setSongs(updated.map((s) => ({
+              ...s,
+              fileUrl: s.filePath ? localFileUrl(s.filePath) : fileUrlMap.current.get(s.id),
+            })));
+          }
+        }
+      }
     })();
+
+    return () => { cancelled = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Pick and set watched folder
